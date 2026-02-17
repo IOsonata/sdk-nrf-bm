@@ -40,7 +40,7 @@ static void sd_enable_irq_forwarding(void)
 	irq_forwarding_enabled_magic_number_holder = IRQ_FORWARDING_ENABLED_MAGIC_NUMBER;
 }
 
-static int irq_init(void)
+int sd_irq_init(void)
 {
 #define PRIO_HIGH 0	/* SoftDevice high priority interrupt */
 #define PRIO_LOW 4	/* SoftDevice low priority interrupt */
@@ -114,4 +114,5 @@ __attribute__((weak)) void C_CLOCK_POWER_SD_Handler(void)
 
 #endif /* CONFIG_SOC_SERIES_NRF54L */
 
-SYS_INIT(irq_init, APPLICATION, 0);
+/* SYS_INIT removed — call sd_irq_init() explicitly from BtAppInit
+ * before any SoftDevice SVCALL. */

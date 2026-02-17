@@ -82,6 +82,7 @@ extern "C" {
 /* log_ctrl.h */
 #define LOG_PANIC()     ((void)0)
 #define LOG_INIT()      ((void)0)
+#define log_flush()     ((void)0)
 
 #endif /* BM_COMPAT_LOGGING_H__ */
 
@@ -581,6 +582,24 @@ static inline uint32_t sys_be32_to_cpu(uint32_t val)
 
 static inline uint16_t sys_cpu_to_be16(uint16_t val) { return sys_be16_to_cpu(val); }
 static inline uint32_t sys_cpu_to_be32(uint32_t val) { return sys_be32_to_cpu(val); }
+
+/**
+ * @brief Convert a uint64 value into a little-endian byte array initializer.
+ *
+ * Used by dis.c for CONFIG_BLE_DIS_REGULATORY_CERT_LIST.
+ */
+#ifndef sys_uint64_to_array
+#define sys_uint64_to_array(val) {              \
+	(uint8_t)((val) & 0xFF),                \
+	(uint8_t)(((val) >> 8) & 0xFF),         \
+	(uint8_t)(((val) >> 16) & 0xFF),        \
+	(uint8_t)(((val) >> 24) & 0xFF),        \
+	(uint8_t)(((val) >> 32) & 0xFF),        \
+	(uint8_t)(((val) >> 40) & 0xFF),        \
+	(uint8_t)(((val) >> 48) & 0xFF),        \
+	(uint8_t)(((val) >> 56) & 0xFF),        \
+}
+#endif
 
 #endif /* BM_COMPAT_BYTEORDER_H__ */
 

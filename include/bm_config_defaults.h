@@ -655,5 +655,38 @@ in your project's build configuration.
 #define CONFIG_BM_NFC_NDEF_CH_MINOR_VERSION       5
 #endif
 
+/* === SOC series detection === */
+/* Auto-detect from the chip define passed by the build system */
+#ifndef CONFIG_SOC_SERIES_NRF54L
+#if defined(NRF54L15_XXAA) || defined(NRF54L10_XXAA) || defined(NRF54L05_XXAA)
+#define CONFIG_SOC_SERIES_NRF54L  1
+#else
+#define CONFIG_SOC_SERIES_NRF54L  0
+#endif
+#endif
+
+/* === SoftDevice base address in RRAM ===
+ *
+ * Replaces Zephyr's FIXED_PARTITION_OFFSET(softdevice_partition).
+ * Must match the reg property in the devicetree / linker script.
+ *
+ * S145 on nRF54L15: 0x158C00  (partition@158c00, 144 K)
+ * S115 on nRF54L05: 0x62000   (partition@62000)
+ */
+#ifndef CONFIG_SOFTDEVICE_BASE_ADDRESS
+#if defined(NRF54L15_XXAA)
+#define CONFIG_SOFTDEVICE_BASE_ADDRESS  0x158C00
+#elif defined(NRF54L05_XXAA)
+#define CONFIG_SOFTDEVICE_BASE_ADDRESS  0x62000
+#else
+#define CONFIG_SOFTDEVICE_BASE_ADDRESS  0
+#endif
+#endif
+
+/* Compatibility shim for Zephyr devicetree macro used in irq_connect.c */
+#ifndef FIXED_PARTITION_OFFSET
+#define FIXED_PARTITION_OFFSET(label)   CONFIG_SOFTDEVICE_BASE_ADDRESS
+#endif
+
 
 #endif /* BM_CONFIG_DEFAULTS_H__ */

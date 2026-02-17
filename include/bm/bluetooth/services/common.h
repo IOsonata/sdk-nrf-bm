@@ -40,7 +40,9 @@ static inline bool ble_gap_conn_sec_mode_equal(const ble_gap_conn_sec_mode_t *a,
 	return (a->sm == b->sm) && (a->lv == b->lv);
 }
 
+#ifndef BYTES_TO_WORDS
 #define BYTES_TO_WORDS(n_bytes) (((n_bytes) + 3) >> 2)
+#endif
 
 /**
  * @brief Set sec_mode to have no access rights.
