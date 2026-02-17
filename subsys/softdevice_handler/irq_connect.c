@@ -138,6 +138,39 @@ SD_IRQ_FORWARDER(SWI00_IRQHandler,          C_SWI00_Handler,           NRF_SD_IS
 
 
 /* ======================================================================
+ * Vector table relocation to RAM
+ *
+ * The default vector table lives in RRAM (.vectors section).  RRAM on
+ * nRF54L15 is not directly writable with plain stores — it needs
+ * RRAMC configuration.  Rather than enabling RRAMC writes, we copy
+ * the entire table into a RAM buffer and re-point SCB->VTOR.
+ * All subsequent writes (sd_patch_system_vectors, NVIC_SetVector for
+ * IRQ_DIRECT_CONNECT) then target writable SRAM.
+ *
+ * nRF54L15 vector table has ~289 entries.  We round up to 512 entries
+ * (2048 bytes) so the VTOR alignment requirement is satisfied (table
+ * base must be aligned to its size rounded up to the next power of 2).
+ * ====================================================================== */
+
+#define VTOR_TABLE_ENTRIES  512
+
+static uint32_t s_ram_vectors[VTOR_TABLE_ENTRIES]
+	__attribute__((aligned(2048)));
+
+static void sd_relocate_vectors_to_ram(void)
+{
+	const uint32_t *src = (const uint32_t *)SCB->VTOR;
+
+	for (int i = 0; i < VTOR_TABLE_ENTRIES; i++)
+		s_ram_vectors[i] = src[i];
+
+	SCB->VTOR = (uint32_t)s_ram_vectors;
+	__DSB();
+	__ISB();
+}
+
+
+/* ======================================================================
  * Runtime vector table patching
  *
  * NVIC_SetVector only handles peripheral IRQs (positive IRQ numbers).
@@ -165,33 +198,54 @@ static void sd_patch_system_vectors(void)
 
 
 /* ======================================================================
- * Initialization — call sd_irq_init() before any SoftDevice SVCALL
+ * Initialization — two-phase to bracket sd_softdevice_enable():
+ *
+ *   sd_irq_init()             ← before sd_softdevice_enable()
+ *     Relocate vectors to RAM, patch SVC/HardFault forwarding,
+ *     set SD base address, run SD reset handler.
+ *
+ *   sd_irq_post_enable()      ← after sd_softdevice_enable()
+ *     Connect SD-owned peripheral IRQs with correct priorities,
+ *     enable the forwarding magic number.
+ *
+ * The split is required because our bare-metal IRQ_DIRECT_CONNECT
+ * calls NVIC_SetPriority at runtime.  The SD validates interrupt
+ * config during sd_softdevice_enable and will return
+ * NRF_ERROR_SDM_INCORRECT_INTERRUPT_CONFIGURATION (0x1001) if
+ * its owned IRQs already have priorities set.
  * ====================================================================== */
 
-static void sd_enable_irq_forwarding(void)
-{
-	softdevice_vector_forward_address = FIXED_PARTITION_OFFSET(softdevice_partition);
-#ifdef CONFIG_BOOTLOADER_MCUBOOT
-	softdevice_vector_forward_address += CONFIG_ROM_START_OFFSET;
-#endif
-
-	CallSoftDeviceResetHandler();
-	irq_forwarding_enabled_magic_number_holder = IRQ_FORWARDING_ENABLED_MAGIC_NUMBER;
-}
+#define PRIO_HIGH 0   /* SoftDevice high priority interrupt */
+#define PRIO_LOW  4   /* SoftDevice low priority interrupt */
 
 int sd_irq_init(void)
 {
-#define PRIO_HIGH 0   /* SoftDevice high priority interrupt */
-#define PRIO_LOW  4   /* SoftDevice low priority interrupt */
+	/* 0. Move the vector table from RRAM to SRAM so that all
+	 *    subsequent writes (system vector patches, NVIC_SetVector)
+	 *    target writable memory. */
+	sd_relocate_vectors_to_ram();
 
 	/* 1. Patch SVC_Handler and HardFault_Handler into the vector table.
 	 *    Guarantees the forwarding handlers are active regardless of
 	 *    how the linker resolved weak vs strong symbols at link time. */
 	sd_patch_system_vectors();
 
-	/* 2. Wire SD-owned peripheral IRQs into NVIC.
-	 *    IRQ_DIRECT_CONNECT uses NVIC_SetVector which writes the
-	 *    handler address directly into the vector table. */
+	/* 2. Set SD base address and run SD reset handler.
+	 *    SVC forwarding is now functional (vectors patched above). */
+	softdevice_vector_forward_address = FIXED_PARTITION_OFFSET(softdevice_partition);
+#ifdef CONFIG_BOOTLOADER_MCUBOOT
+	softdevice_vector_forward_address += CONFIG_ROM_START_OFFSET;
+#endif
+	CallSoftDeviceResetHandler();
+
+	return 0;
+}
+
+void sd_irq_post_enable(void)
+{
+	/* Wire SD-owned peripheral IRQs into NVIC.
+	 * Must happen AFTER sd_softdevice_enable() — the SD validates
+	 * that its IRQs are unconfigured during enable. */
 	IRQ_DIRECT_CONNECT(RADIO_0_IRQn,     PRIO_HIGH, RADIO_0_IRQHandler,        IRQ_ZERO_LATENCY);
 	IRQ_DIRECT_CONNECT(TIMER10_IRQn,     PRIO_HIGH, TIMER10_IRQHandler,        IRQ_ZERO_LATENCY);
 	IRQ_DIRECT_CONNECT(GRTC_3_IRQn,      PRIO_HIGH, GRTC_3_IRQHandler,        IRQ_ZERO_LATENCY);
@@ -202,10 +256,8 @@ int sd_irq_init(void)
 
 	NVIC_SetPriority(SVCall_IRQn, PRIO_LOW);
 
-	/* 3. Set SD base address and run SD reset handler */
-	sd_enable_irq_forwarding();
-
-	return 0;
+	/* Enable the forwarding path in ConsumeOrForwardIRQ */
+	irq_forwarding_enabled_magic_number_holder = IRQ_FORWARDING_ENABLED_MAGIC_NUMBER;
 }
 
 

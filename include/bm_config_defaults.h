@@ -99,6 +99,18 @@ in your project's build configuration.
 #define CONFIG_NRF_SDH_BLE_SERVICE_CHANGED        0
 #endif
 
+/* BLE role enables — IOsonata supports both peripheral and central
+ * at runtime via BtAppCfg_t.Role, so both must always be compiled in.
+ * The SDK uses a mix of #if defined() and #if value guards, so both
+ * macros must be defined AND set to 1. */
+#ifndef CONFIG_SOFTDEVICE_PERIPHERAL
+#define CONFIG_SOFTDEVICE_PERIPHERAL              1
+#endif
+
+#ifndef CONFIG_SOFTDEVICE_CENTRAL
+#define CONFIG_SOFTDEVICE_CENTRAL                 1
+#endif
+
 #ifndef CONFIG_NRF_SDH_SOC_RAND_SEED
 #define CONFIG_NRF_SDH_SOC_RAND_SEED              1
 #endif

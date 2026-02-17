@@ -20,6 +20,7 @@
 #include <ble_gap.h>
 #include <ble_hci.h>
 #include <bm/bluetooth/ble_gatt_db.h>
+#include "bm_compat.h"
 
 #ifdef __cplusplus
 extern "C" {

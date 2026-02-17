@@ -12,10 +12,15 @@
 #include "bm/softdevice_handler/nrf_sdh.h"
 #include "bm/bm_scheduler.h"
 #include "bm_compat.h"
-#include "nrf_sdh_config.h"
+/* nrf_sdh_config.h removed — all CONFIG_NRF_SDH_* values are provided
+ * by bm_config_defaults.h, which bm_compat.h includes automatically. */
 #include "coredev/system_core_clock.h"
+#include "irq_connect.h"
 
 extern McuOsc_t g_McuOsc;
+
+/* Forward declaration — defined below, needed by nrf_sdh_enable() */
+static int sd_direct_isr(void);
 
 
 /* Clock source is determined at runtime from g_McuOsc.LowPwrOsc.Type,
@@ -174,10 +179,33 @@ static int nrf_sdh_enable(void)
 		.hfint_ctiv = CONFIG_NRF_SDH_CLOCK_HFINT_CALIBRATION_INTERVAL,
 	};
 
+	/* S145 requires GRTC SYSCOUNTER running with AUTOEN before
+	 * sd_softdevice_enable.  In Zephyr this is done by the GRTC
+	 * driver at boot; in bare-metal we do it here.
+	 *
+	 * The LF clock source is configured by the SD via clock_lf_cfg.source,
+	 * not through a GRTC register.
+	 */
+#ifndef GRTC_MODE_AUTOEN_CntAuto
+#define GRTC_MODE_AUTOEN_CntAuto  (1UL << 0)
+#endif
+#ifndef GRTC_MODE_SYSCOUNTEREN_Enabled
+#define GRTC_MODE_SYSCOUNTEREN_Enabled  (1UL << 1)
+#endif
+	NRF_GRTC->MODE |= (GRTC_MODE_AUTOEN_CntAuto
+			  | GRTC_MODE_SYSCOUNTEREN_Enabled);
+	NRF_GRTC->TASKS_START = 1;
+
 	err = sd_softdevice_enable(&clock_lf_cfg, softdevice_fault_handler);
 	if (err) {
+		LOG_ERR("sd_softdevice_enable failed: SD err 0x%x", err);
 		return -EINVAL;
 	}
+
+	/* Phase 2: now that the SD is running, connect its peripheral IRQs
+	 * and enable the forwarding path.  Must be after sd_softdevice_enable
+	 * because the SD validates interrupt config during enable. */
+	sd_irq_post_enable();
 
 	sdh_is_suspended = false;
 	sdh_transition = false;
@@ -195,7 +223,10 @@ static int nrf_sdh_enable(void)
 	(void) sdh_soc_rand_seed(NRF_EVT_RAND_SEED_REQUEST, NULL);
 #endif /* CONFIG_NRF_SDH_DISPATCH_MODEL_SCHED */
 
-	/* Enable event interrupt, the priority has already been set by the stack. */
+	/* Enable event interrupt.
+	 * SYS_INIT is stripped in bare-metal, so wire the SD event IRQ here
+	 * (was originally done by SYS_INIT(sd_irq_init) at boot). */
+	IRQ_DIRECT_CONNECT(SD_EVT_IRQn, 4, sd_direct_isr, 0);
 	NVIC_EnableIRQ((IRQn_Type)SD_EVT_IRQn);
 
 	(void)sdh_state_evt_observer_notify(NRF_SDH_STATE_EVT_ENABLED);
@@ -417,12 +448,6 @@ ISR_DIRECT_DECLARE(sd_direct_isr)
 	return 0;
 }
 
-static int sd_irq_init(void)
-{
-	IRQ_DIRECT_CONNECT(SD_EVT_IRQn, 4, sd_direct_isr, 0);
-	irq_enable(SD_EVT_IRQn);
-
-	return 0;
-}
-
-SYS_INIT(sd_irq_init, APPLICATION, 0);
+/* sd_irq_init() functionality (SD_EVT_IRQn wiring) is now inlined
+ * in nrf_sdh_enable() above.  The original SYS_INIT(sd_irq_init, ...)
+ * was stripped by bm_compat.h; inlining avoids the silent no-op. */
