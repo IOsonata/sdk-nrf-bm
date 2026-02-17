@@ -2,28 +2,171 @@
  * Copyright (c) 2024 Nordic Semiconductor ASA
  *
  * SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
+ *
+ * SoftDevice ISR forwarding and IRQ initialization for nRF54L.
+ *
+ * Merged irq_connect.c + irq_forward.s into a single compilation unit
+ * so that when the linker pulls in sd_irq_init() (called from BtAppInit),
+ * the strong SVC_Handler / HardFault_Handler / peripheral ISR definitions
+ * come along and override the weak defaults in vector_nrf54l15.c.
+ *
+ * Additionally, sd_irq_init() patches the vector table at runtime as a
+ * belt-and-suspenders guarantee against linker archive resolution issues.
+ *
+ * Flow:
+ *   CPU takes SVC/IRQ → enters naked handler →
+ *     if SD enabled: reads SD's vector at softdevice_vector_forward_address,
+ *                    BX to SD handler (tail-call, exception frame intact)
+ *     if SD disabled: BX to app's C_xxx_Handler fallback
  */
 
+#include <stdint.h>
 #include "bm_compat.h"
 
-
 #if CONFIG_SOC_SERIES_NRF54L
+
 #include "irq_connect.h"
+#include "nrf_sd_isr.h"
 
-extern void CLOCK_POWER_SD_IRQHandler(void);
-extern void RADIO_0_IRQHandler(void);
-extern void TIMER10_IRQHandler(void);
-extern void GRTC_3_IRQHandler(void);
-extern void ECB00_IRQHandler(void);
-extern void AAR00_CCM00_IRQHandler(void);
-extern void SWI00_IRQHandler(void);
+/* Stringify helpers — expand macro value THEN stringify */
+#define _SD_XSTR(x) #x
+#define SD_XSTR(x)  _SD_XSTR(x)
 
-/* In irq_forward.s */
-extern void SVC_Handler(void);
-extern void CallSoftDeviceResetHandler(void);
+
+/* ======================================================================
+ * Data — referenced by naked asm handlers
+ * ====================================================================== */
 
 uint32_t irq_forwarding_enabled_magic_number_holder;
 uint32_t softdevice_vector_forward_address;
+
+
+/* ======================================================================
+ * ISR Forwarding Handlers (naked — no compiler prologue/epilogue)
+ *
+ * The SoftDevice handlers expect the hardware exception frame
+ * {R0-R3, R12, LR, PC, xPSR} untouched on the stack.
+ * ====================================================================== */
+
+/* ------------------------------------------------------------------
+ * ConsumeOrForwardIRQ (internal)
+ *
+ * On entry (set by caller):
+ *   R0 = NRF_SD_ISR_OFFSET_xxx  (SD vector table offset)
+ *   R3 = address of app-side C_xxx_Handler fallback
+ *
+ * If SD forwarding active  → BX to SD handler
+ * If SD forwarding inactive → BX R3 (app handler)
+ * ------------------------------------------------------------------ */
+__attribute__((naked, used))
+static void ConsumeOrForwardIRQ(void)
+{
+	__asm volatile(
+		"LDR  R2, =irq_forwarding_enabled_magic_number_holder \n"
+		"LDR  R2, [R2]                                        \n"
+		"LDR  R1, =" SD_XSTR(IRQ_FORWARDING_ENABLED_MAGIC_NUMBER) "\n"
+		"CMP  R2, R1                                          \n"
+		"BNE  1f                                              \n"
+		/* SD enabled — forward */
+		"LDR  R1, =softdevice_vector_forward_address          \n"
+		"LDR  R1, [R1]                                        \n"
+		"LDR  R1, [R1, R0]                                    \n"
+		"BX   R1                                              \n"
+		"1:                                                   \n"
+		/* SD disabled — app handler */
+		"BX   R3                                              \n"
+	);
+}
+
+/* ------------------------------------------------------------------
+ * SVC_Handler — always forwards to SoftDevice.
+ * (SVCs with SD numbers only issued after sd_softdevice_enable)
+ * ------------------------------------------------------------------ */
+__attribute__((naked))
+void SVC_Handler(void)
+{
+	__asm volatile(
+		"LDR  R0, =" SD_XSTR(NRF_SD_ISR_OFFSET_SVC) "        \n"
+		"LDR  R1, =softdevice_vector_forward_address          \n"
+		"LDR  R1, [R1]                                        \n"
+		"LDR  R1, [R1, R0]                                    \n"
+		"BX   R1                                              \n"
+	);
+}
+
+/* ------------------------------------------------------------------
+ * CallSoftDeviceResetHandler — called from sd_irq_init() to run
+ * the SD's reset/init routine.  Not an ISR; uses BLX (call).
+ * ------------------------------------------------------------------ */
+__attribute__((naked))
+void CallSoftDeviceResetHandler(void)
+{
+	__asm volatile(
+		"LDR  R0, =" SD_XSTR(NRF_SD_ISR_OFFSET_RESET) "      \n"
+		"LDR  R1, =softdevice_vector_forward_address          \n"
+		"LDR  R1, [R1]                                        \n"
+		"LDR  R1, [R1, R0]                                    \n"
+		"PUSH {LR}                                            \n"
+		"BLX  R1                                              \n"
+		"POP  {LR}                                            \n"
+		"BX   LR                                              \n"
+	);
+}
+
+/* ------------------------------------------------------------------
+ * Peripheral ISR forwarder macro
+ * ------------------------------------------------------------------ */
+#define SD_IRQ_FORWARDER(handler_name, c_fallback_name, sd_offset_macro) \
+	__attribute__((naked))                                          \
+	void handler_name(void)                                         \
+	{                                                               \
+		__asm volatile(                                         \
+			"LDR R3, =" #c_fallback_name "            \n"   \
+			"LDR R0, =" SD_XSTR(sd_offset_macro) "    \n"   \
+			"B   ConsumeOrForwardIRQ                   \n"   \
+		);                                                      \
+	}
+
+SD_IRQ_FORWARDER(HardFault_Handler,         C_HardFault_Handler,       NRF_SD_ISR_OFFSET_HARDFAULT)
+SD_IRQ_FORWARDER(CLOCK_POWER_SD_IRQHandler, C_CLOCK_POWER_SD_Handler,  NRF_SD_ISR_OFFSET_CLOCK_POWER)
+SD_IRQ_FORWARDER(RADIO_0_IRQHandler,        C_RADIO_0_Handler,         NRF_SD_ISR_OFFSET_RADIO_0)
+SD_IRQ_FORWARDER(TIMER10_IRQHandler,        C_TIMER10_Handler,         NRF_SD_ISR_OFFSET_TIMER10)
+SD_IRQ_FORWARDER(GRTC_3_IRQHandler,         C_GRTC_3_Handler,         NRF_SD_ISR_OFFSET_GRTC_3)
+SD_IRQ_FORWARDER(ECB00_IRQHandler,          C_ECB00_Handler,           NRF_SD_ISR_OFFSET_ECB00)
+SD_IRQ_FORWARDER(AAR00_CCM00_IRQHandler,    C_AAR00_CCM00_Handler,     NRF_SD_ISR_OFFSET_AAR00_CCM00)
+SD_IRQ_FORWARDER(SWI00_IRQHandler,          C_SWI00_Handler,           NRF_SD_ISR_OFFSET_SWI00)
+
+
+/* ======================================================================
+ * Runtime vector table patching
+ *
+ * NVIC_SetVector only handles peripheral IRQs (positive IRQ numbers).
+ * System exceptions like SVC and HardFault must be patched directly
+ * in the vector table via VTOR.
+ * ====================================================================== */
+
+/* Exception positions in the ARM vector table */
+#define VTOR_POS_HARDFAULT  3   /* offset 0x0C */
+#define VTOR_POS_SVC       11   /* offset 0x2C */
+
+static void sd_patch_system_vectors(void)
+{
+	uint32_t *vtor = (uint32_t *)SCB->VTOR;
+
+	/* Patch SVC_Handler and HardFault_Handler entries.
+	 * The Thumb bit is included automatically by the function address. */
+	vtor[VTOR_POS_SVC]       = (uint32_t)SVC_Handler;
+	vtor[VTOR_POS_HARDFAULT] = (uint32_t)HardFault_Handler;
+
+	/* Ensure writes are visible before any SVC instruction */
+	__DSB();
+	__ISB();
+}
+
+
+/* ======================================================================
+ * Initialization — call sd_irq_init() before any SoftDevice SVCALL
+ * ====================================================================== */
 
 static void sd_enable_irq_forwarding(void)
 {
@@ -32,40 +175,43 @@ static void sd_enable_irq_forwarding(void)
 	softdevice_vector_forward_address += CONFIG_ROM_START_OFFSET;
 #endif
 
-	LOG_INF("SoftDevice forward address: 0x%x", softdevice_vector_forward_address);
-
-	log_flush();
-
 	CallSoftDeviceResetHandler();
 	irq_forwarding_enabled_magic_number_holder = IRQ_FORWARDING_ENABLED_MAGIC_NUMBER;
 }
 
 int sd_irq_init(void)
 {
-#define PRIO_HIGH 0	/* SoftDevice high priority interrupt */
-#define PRIO_LOW 4	/* SoftDevice low priority interrupt */
+#define PRIO_HIGH 0   /* SoftDevice high priority interrupt */
+#define PRIO_LOW  4   /* SoftDevice low priority interrupt */
 
-	/* IRQ_ZERO_LATENCY with CONFIG_ZERO_LATENCY_LEVELS equal to 1 (default) forces the priority
-	 * level to 0, ignoring the specified priority.
-	 * On `sd_softdevice_enable()`, the SoftDevice will override the necessary interrupts it
-	 * uses internally with the priority levels it needs.
-	 */
-	IRQ_DIRECT_CONNECT(RADIO_0_IRQn, PRIO_HIGH, RADIO_0_IRQHandler, IRQ_ZERO_LATENCY);
-	IRQ_DIRECT_CONNECT(TIMER10_IRQn, PRIO_HIGH, TIMER10_IRQHandler, IRQ_ZERO_LATENCY);
-	IRQ_DIRECT_CONNECT(GRTC_3_IRQn, PRIO_HIGH, GRTC_3_IRQHandler, IRQ_ZERO_LATENCY);
+	/* 1. Patch SVC_Handler and HardFault_Handler into the vector table.
+	 *    Guarantees the forwarding handlers are active regardless of
+	 *    how the linker resolved weak vs strong symbols at link time. */
+	sd_patch_system_vectors();
 
-	/* These are not zero latency. */
-	IRQ_DIRECT_CONNECT(AAR00_CCM00_IRQn, PRIO_LOW, AAR00_CCM00_IRQHandler, 0);
-	IRQ_DIRECT_CONNECT(CLOCK_POWER_IRQn, PRIO_LOW, CLOCK_POWER_SD_IRQHandler, 0);
-	IRQ_DIRECT_CONNECT(ECB00_IRQn, PRIO_LOW, ECB00_IRQHandler, 0);
-	IRQ_DIRECT_CONNECT(SWI00_IRQn, PRIO_LOW, SWI00_IRQHandler, 0);
+	/* 2. Wire SD-owned peripheral IRQs into NVIC.
+	 *    IRQ_DIRECT_CONNECT uses NVIC_SetVector which writes the
+	 *    handler address directly into the vector table. */
+	IRQ_DIRECT_CONNECT(RADIO_0_IRQn,     PRIO_HIGH, RADIO_0_IRQHandler,        IRQ_ZERO_LATENCY);
+	IRQ_DIRECT_CONNECT(TIMER10_IRQn,     PRIO_HIGH, TIMER10_IRQHandler,        IRQ_ZERO_LATENCY);
+	IRQ_DIRECT_CONNECT(GRTC_3_IRQn,      PRIO_HIGH, GRTC_3_IRQHandler,        IRQ_ZERO_LATENCY);
+	IRQ_DIRECT_CONNECT(AAR00_CCM00_IRQn, PRIO_LOW,  AAR00_CCM00_IRQHandler,    0);
+	IRQ_DIRECT_CONNECT(CLOCK_POWER_IRQn, PRIO_LOW,  CLOCK_POWER_SD_IRQHandler, 0);
+	IRQ_DIRECT_CONNECT(ECB00_IRQn,       PRIO_LOW,  ECB00_IRQHandler,          0);
+	IRQ_DIRECT_CONNECT(SWI00_IRQn,       PRIO_LOW,  SWI00_IRQHandler,          0);
 
 	NVIC_SetPriority(SVCall_IRQn, PRIO_LOW);
 
+	/* 3. Set SD base address and run SD reset handler */
 	sd_enable_irq_forwarding();
 
 	return 0;
 }
+
+
+/* ======================================================================
+ * App-side fallback handlers (weak — used when SD is disabled)
+ * ====================================================================== */
 
 __attribute__((weak)) void C_HardFault_Handler(void)
 {
@@ -113,6 +259,3 @@ __attribute__((weak)) void C_CLOCK_POWER_SD_Handler(void)
 }
 
 #endif /* CONFIG_SOC_SERIES_NRF54L */
-
-/* SYS_INIT removed — call sd_irq_init() explicitly from BtAppInit
- * before any SoftDevice SVCALL. */
