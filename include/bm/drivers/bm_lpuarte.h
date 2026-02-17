@@ -14,7 +14,7 @@
 #define LPUARTE_H__
 
 #include <stdint.h>
-#include <zephyr/sys/util.h>
+#include "bm_compat.h"
 #include <nrfx_gpiote.h>
 #include <nrfx_uarte.h>
 #include <bm/bm_timer.h>

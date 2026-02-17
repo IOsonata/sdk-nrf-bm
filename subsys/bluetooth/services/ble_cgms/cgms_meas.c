@@ -5,7 +5,7 @@
  */
 #include <stdint.h>
 #include <string.h>
-#include <zephyr/sys/byteorder.h>
+#include "bm_compat.h"
 #include <ble.h>
 #include <bm/bluetooth/services/ble_cgms.h>
 #include <bm/bluetooth/services/common.h>
@@ -13,9 +13,7 @@
 #include "cgms_meas.h"
 #include "cgms_db.h"
 
-#include <zephyr/logging/log.h>
 
-LOG_MODULE_DECLARE(ble_cgms, CONFIG_BLE_CGMS_LOG_LEVEL);
 
 /* Encode a Glucose measurement. */
 static uint8_t cgms_meas_encode(struct ble_cgms *cgms,

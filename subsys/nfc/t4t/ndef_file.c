@@ -6,7 +6,7 @@
 
 #include <errno.h>
 #include <stddef.h>
-#include <zephyr/sys/byteorder.h>
+#include "bm_compat.h"
 #include <bm/nfc/t4t/ndef_file.h>
 
 int nfc_t4t_ndef_file_encode(uint8_t *file_buf, uint32_t *size)

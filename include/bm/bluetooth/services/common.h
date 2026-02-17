@@ -9,7 +9,7 @@
 
 #include <ble.h>
 #include <ble_gap.h>
-#include <zephyr/sys/byteorder.h>
+#include "bm_compat.h"
 
 #ifdef __cplusplus
 extern "C" {

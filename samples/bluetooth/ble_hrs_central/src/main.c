@@ -29,14 +29,10 @@
 #include <bm/softdevice_handler/nrf_sdh_ble.h>
 #include <bm/softdevice_handler/nrf_sdh_soc.h>
 
-#include <zephyr/kernel.h>
-#include <zephyr/bluetooth/uuid.h>
-#include <zephyr/logging/log.h>
-#include <zephyr/logging/log_ctrl.h>
+#include "bm_compat.h"
 
 #include <board-config.h>
 
-LOG_MODULE_REGISTER(app, CONFIG_APP_BLE_HRS_CENTRAL_SAMPLE_LOG_LEVEL);
 
 /* Perform bonding. */
 #define SEC_PARAM_BOND 1

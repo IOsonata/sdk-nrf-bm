@@ -7,9 +7,8 @@
 #include <ble_gap.h>
 #include <bm/bluetooth/ble_conn_params.h>
 #include <bm/softdevice_handler/nrf_sdh_ble.h>
-#include <zephyr/logging/log.h>
+#include "bm_compat.h"
 
-LOG_MODULE_DECLARE(ble_conn_params, CONFIG_BLE_CONN_PARAMS_LOG_LEVEL);
 
 #define BLE_GAP_DATA_LENGTH_DEFAULT 27
 #define BLE_GAP_DATA_LENGTH_MAX 251

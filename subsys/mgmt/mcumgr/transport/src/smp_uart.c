@@ -10,18 +10,8 @@
  */
 
 #include <string.h>
-#include <zephyr/kernel.h>
-#include <zephyr/init.h>
-#include <zephyr/net_buf.h>
-#include <zephyr/drivers/console/uart_mcumgr.h>
-#include <zephyr/mgmt/mcumgr/mgmt/mgmt.h>
-#include <zephyr/mgmt/mcumgr/smp/smp.h>
-#include <zephyr/mgmt/mcumgr/transport/smp.h>
-#include <zephyr/mgmt/mcumgr/transport/serial.h>
+#include "bm_compat.h"
 
-#include <zephyr/mgmt/mcumgr/mgmt/mgmt.h>
-#include <zephyr/mgmt/mcumgr/smp/smp.h>
-#include <zephyr/mgmt/mcumgr/mgmt/handlers.h>
 
 #include <mgmt/mcumgr/transport/smp_internal.h>
 

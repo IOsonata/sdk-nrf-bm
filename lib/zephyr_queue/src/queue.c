@@ -11,16 +11,11 @@
  */
 
 
-#include <zephyr/kernel.h>
-#include <zephyr/kernel_structs.h>
+#include "bm_compat.h"
 
-#include <zephyr/toolchain.h>
 #include <wait_q.h>
 #include <ksched.h>
-#include <zephyr/init.h>
-#include <zephyr/internal/syscall_handler.h>
 #include <kernel_internal.h>
-#include <zephyr/sys/check.h>
 
 struct alloc_node {
 	sys_sfnode_t node;

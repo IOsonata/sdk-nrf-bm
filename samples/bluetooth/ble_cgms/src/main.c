@@ -37,14 +37,10 @@
 #include <bm/bm_buttons.h>
 #include <bm/bluetooth/ble_qwr.h>
 
-#include <zephyr/kernel.h>
-#include <zephyr/logging/log.h>
-#include <zephyr/logging/log_ctrl.h>
-#include <zephyr/sys/util.h>
+#include "bm_compat.h"
 
 #include <board-config.h>
 
-LOG_MODULE_REGISTER(app, CONFIG_APP_BLE_CGMS_LOG_LEVEL);
 
 /* Perform bonding. */
 #define SEC_PARAM_BOND 1

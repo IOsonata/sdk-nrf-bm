@@ -10,7 +10,7 @@
 #include <string.h>
 #include <ble.h>
 #include <bm/bluetooth/ble_qwr.h>
-#include <zephyr/sys/byteorder.h>
+#include "bm_compat.h"
 
 /* Non-zero value used to make sure the given structure has been initialized by the module. */
 #define BLE_QWR_INITIALIZED 0xAABBCCDD

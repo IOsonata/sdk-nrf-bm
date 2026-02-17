@@ -19,7 +19,7 @@
 #include <ble.h>
 #include <ble_gap.h>
 #include <bm/bluetooth/peer_manager/peer_manager_types.h>
-#include <zephyr/sys/util.h>
+#include "bm_compat.h"
 
 #ifdef __cplusplus
 extern "C" {

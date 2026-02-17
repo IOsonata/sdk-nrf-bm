@@ -9,15 +9,12 @@
 #include <bm/bm_gpiote.h>
 #include <nrfx_gpiote.h>
 #include <nrfx_uarte.h>
-#include <zephyr/irq.h>
+#include "bm_compat.h"
 #if defined(CONFIG_SOFTDEVICE)
 #include <nrf_soc.h>
 #include <nrf_sdm.h>
 #endif /* CONFIG_SOFTDEVICE */
-#include <zephyr/logging/log.h>
-#include <zephyr/sys/atomic.h>
 
-LOG_MODULE_REGISTER(lpuarte, CONFIG_BM_SW_LPUARTE_LOG_LEVEL);
 
 static void req_pin_handler(nrfx_gpiote_pin_t pin, nrfx_gpiote_trigger_t trigger, void *context);
 static void rdy_pin_handler(nrfx_gpiote_pin_t pin, nrfx_gpiote_trigger_t trigger, void *context);

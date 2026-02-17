@@ -5,11 +5,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <zephyr/sys/util_macro.h>
-#include <zephyr/toolchain.h>
+#include "bm_compat.h"
 #include <string.h>
-#include <zephyr/logging/log.h>
-#include <zephyr/dfu/mcuboot.h>
 
 #include <zcbor_common.h>
 #include <zcbor_decode.h>
@@ -17,22 +14,17 @@
 
 #include <bootutil/bootutil_public.h>
 
-#include <zephyr/mgmt/mcumgr/mgmt/mgmt.h>
-#include <zephyr/mgmt/mcumgr/smp/smp.h>
-#include <zephyr/mgmt/mcumgr/grp/img_mgmt/img_mgmt.h>
 
 #include <mgmt/mcumgr/util/zcbor_bulk.h>
 #include <mgmt/mcumgr/grp/img_mgmt/img_mgmt_priv.h>
 
 #ifdef CONFIG_MCUMGR_MGMT_NOTIFICATION_HOOKS
-#include <zephyr/mgmt/mcumgr/mgmt/callbacks.h>
 #endif
 
 #ifdef CONFIG_MCUMGR_GRP_IMG_IMAGE_SLOT_STATE_HOOK
 #include <mgmt/mcumgr/transport/smp_internal.h>
 #endif
 
-LOG_MODULE_DECLARE(mcumgr_img_grp, CONFIG_MCUMGR_GRP_IMG_LOG_LEVEL);
 
 #ifndef CONFIG_MCUMGR_GRP_IMG_FRUGAL_LIST
 #define ZCBOR_ENCODE_FLAG(zse, label, value)					\

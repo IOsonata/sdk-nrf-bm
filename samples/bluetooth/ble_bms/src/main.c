@@ -24,19 +24,13 @@
 #include <bm/softdevice_handler/nrf_sdh.h>
 #include <bm/softdevice_handler/nrf_sdh_ble.h>
 
-#include <zephyr/kernel.h>
-#include <zephyr/irq.h>
-#include <zephyr/sys/ring_buffer.h>
-#include <zephyr/toolchain.h>
-#include <zephyr/logging/log.h>
-#include <zephyr/logging/log_ctrl.h>
+#include "bm_compat.h"
 #include <board-config.h>
 
 /* FIFO for keeping track of peers that cannot be deleted immediately. */
 RING_BUF_DECLARE(peers_to_delete_on_disconnect,
 		 CONFIG_APP_BLE_BMS_PEERS_TO_DELETE_ON_DISCONNECT_MAX * sizeof(uint16_t));
 
-LOG_MODULE_REGISTER(app, CONFIG_APP_BLE_BMS_LOG_LEVEL);
 
 /* Perform bonding. */
 #define SEC_PARAM_BOND 1

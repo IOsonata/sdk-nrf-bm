@@ -14,7 +14,7 @@
 #define BM_SCHEDULER_H__
 
 #include <stdint.h>
-#include <zephyr/sys/slist.h>
+#include "bm_compat.h"
 
 #ifdef __cplusplus
 extern "C" {

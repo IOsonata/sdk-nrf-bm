@@ -11,17 +11,12 @@
 #include <inttypes.h>
 #include <stdbool.h>
 #include <string.h>
-#include <zephyr/sys/crc.h>
-#include <zephyr/sys/atomic.h>
-#include <zephyr/sys/ring_buffer.h>
-#include <zephyr/logging/log.h>
-#include <zephyr/irq.h>
+#include "bm_compat.h"
 
 #include <bm/storage/bm_storage.h>
 #include <bm/fs/bm_zms.h>
 #include "bm_zms_priv.h"
 
-LOG_MODULE_REGISTER(bm_zms, CONFIG_BM_ZMS_LOG_LEVEL);
 
 #if defined(CONFIG_ZTEST) && defined(CONFIG_BOARD_NATIVE_SIM)
 #define __ALIGN(x) __aligned(x)

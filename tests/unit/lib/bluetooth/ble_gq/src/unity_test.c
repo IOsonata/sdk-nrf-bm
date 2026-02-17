@@ -8,7 +8,7 @@
 #include <nrf_error.h>
 #include <stdint.h>
 #include <bm/bluetooth/ble_gq.h>
-#include <zephyr/sys/util.h>
+#include "bm_compat.h"
 
 #include "cmock_ble_gattc.h"
 #include "cmock_ble_gatts.h"

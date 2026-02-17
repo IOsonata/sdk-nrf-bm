@@ -4,14 +4,8 @@
  * SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
  */
 
-#include <zephyr/init.h>
-#include <zephyr/kernel.h>
-#include <zephyr/irq.h>
-#include <zephyr/storage/flash_map.h>
-#include <zephyr/logging/log.h>
-#include <zephyr/logging/log_ctrl.h>
+#include "bm_compat.h"
 
-LOG_MODULE_DECLARE(nrf_sdh, CONFIG_NRF_SDH_LOG_LEVEL);
 
 #if CONFIG_SOC_SERIES_NRF54L
 #include "irq_connect.h"

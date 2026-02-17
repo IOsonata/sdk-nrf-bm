@@ -5,21 +5,16 @@
  */
 
 #include <stdbool.h>
-#include <zephyr/kernel.h>
-#include <zephyr/sys/crc.h>
-#include <zephyr/logging/log.h>
+#include "bm_compat.h"
 #include <bm_installs.h>
-#include <zephyr/storage/flash_map.h>
 
 #if defined(CONFIG_BM_METADATA_WRITE)
-#include <zephyr/drivers/flash.h>
 
 static struct flash_area metadata_slot;
 static bool setup_finished;
 static bool bm_installs_was_valid;
 #endif
 
-LOG_MODULE_REGISTER(bm_installs, CONFIG_BM_INSTALL_LOG_LEVEL);
 
 #if defined(CONFIG_SOC_SERIES_NRF54L)
 #define MAX_IMAGE_SIZE (2 * 1024 * 1024)

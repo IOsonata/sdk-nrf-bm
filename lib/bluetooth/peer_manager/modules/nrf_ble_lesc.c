@@ -10,14 +10,10 @@
 #include <nrf_error.h>
 #include <bm/softdevice_handler/nrf_sdh_ble.h>
 #include <psa/crypto.h>
-#include <zephyr/logging/log.h>
-#include <zephyr/sys/byteorder.h>
-#include <zephyr/sys/util.h>
-#include <zephyr/sys/printk.h>
+#include "bm_compat.h"
 
 #include <bm/bluetooth/peer_manager/nrf_ble_lesc.h>
 
-LOG_MODULE_DECLARE(peer_manager, CONFIG_PEER_MANAGER_LOG_LEVEL);
 
 /** @brief Descriptor of the peer public key. */
 struct lesc_peer_pub_key {

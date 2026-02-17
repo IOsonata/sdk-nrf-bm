@@ -6,11 +6,10 @@
 
 #include <nrf_soc.h>
 #include <bm/softdevice_handler/nrf_sdh_soc.h>
-#include <zephyr/logging/log.h>
+#include "bm_compat.h"
 #include <psa/crypto.h>
 #include <cracen_psa.h>
 
-LOG_MODULE_DECLARE(nrf_sdh, CONFIG_NRF_SDH_LOG_LEVEL);
 
 /* Extern in nrf_sdh.c */
 void sdh_soc_rand_seed(uint32_t evt, void *ctx)

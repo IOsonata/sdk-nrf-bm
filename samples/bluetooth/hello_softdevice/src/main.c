@@ -8,12 +8,8 @@
 #include <bm/softdevice_handler/nrf_sdh_ble.h>
 #include <bm/softdevice_handler/nrf_sdh_soc.h>
 
-#include <zephyr/kernel.h> /* k_busy_wait() */
-#include <zephyr/sys_clock.h> /* USEC_PER_SEC */
-#include <zephyr/logging/log.h>
-#include <zephyr/logging/log_ctrl.h>
+#include "bm_compat.h"
 
-LOG_MODULE_REGISTER(app, CONFIG_APP_BLE_HELLO_SD_LOG_LEVEL);
 
 static void on_ble_evt(const ble_evt_t *evt, void *ctx)
 {

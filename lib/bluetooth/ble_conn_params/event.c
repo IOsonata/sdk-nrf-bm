@@ -6,9 +6,8 @@
 
 #include <stddef.h>
 #include <bm/bluetooth/ble_conn_params.h>
-#include <zephyr/logging/log.h>
+#include "bm_compat.h"
 
-LOG_MODULE_REGISTER(ble_conn_params, CONFIG_BLE_CONN_PARAMS_LOG_LEVEL);
 
 /* Optional event handler set by the application */
 static ble_conn_params_evt_handler_t evt_handler;

@@ -5,12 +5,10 @@
  */
 
 #include <nrf_error.h>
-#include <zephyr/sys/__assert.h>
-#include <zephyr/logging/log.h>
+#include "bm_compat.h"
 #include <bm/bluetooth/services/ble_lbs.h>
 #include <bm/bluetooth/services/uuid.h>
 
-LOG_MODULE_REGISTER(ble_lbs, CONFIG_BLE_LBS_LOG_LEVEL);
 
 static void on_write(struct ble_lbs *lbs, const ble_evt_t *ble_evt)
 {

@@ -9,13 +9,10 @@
 #include <bm/bm_timer.h>
 #include <bm/softdevice_handler/nrf_sdh.h>
 
-#include <zephyr/kernel.h>
-#include <zephyr/logging/log.h>
-#include <zephyr/logging/log_ctrl.h>
+#include "bm_compat.h"
 
 #include <board-config.h>
 
-LOG_MODULE_REGISTER(app, CONFIG_APP_LPUARTE_LOG_LEVEL);
 
 static nrfx_uarte_t uarte_inst = NRFX_UARTE_INSTANCE(BOARD_APP_LPUARTE_INST);
 

@@ -14,8 +14,7 @@
 #include <bm/bluetooth/ble_adv_data.h>
 #include <bm/bluetooth/services/common.h>
 
-#include <zephyr/sys/printk.h>
-#include <zephyr/sys/util.h>
+#include "bm_compat.h"
 
 #include "cmock_ble.h"
 #include "cmock_ble_gap.h"

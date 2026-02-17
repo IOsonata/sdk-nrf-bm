@@ -4,8 +4,7 @@
  * SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
  */
 
-#include <zephyr/sys/printk-hooks.h>
-#include <zephyr/sys/libc-hooks.h>
+#include "bm_compat.h"
 
 #include <nrfx_uarte.h>
 

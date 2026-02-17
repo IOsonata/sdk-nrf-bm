@@ -9,8 +9,7 @@
 #include <string.h>
 #include <ble_gap.h>
 #include <bm/bluetooth/ble_adv_data.h>
-#include <zephyr/logging/log.h>
-#include <zephyr/sys/byteorder.h>
+#include "bm_compat.h"
 
 /* Advertising Data and Scan Response format contains 1 octet for the length. */
 #define AD_LENGTH_FIELD_SIZE 1UL
@@ -57,7 +56,6 @@
 
 #define N_AD_TYPES 2 /* The number of Advertising data types to search for at a time. */
 
-LOG_MODULE_REGISTER(ble_adv_data, CONFIG_BLE_ADV_DATA_LOG_LEVEL);
 
 static uint32_t device_addr_encode(uint8_t *buf, uint16_t *offset, uint16_t max_size)
 {

@@ -8,12 +8,8 @@
 #include <nrf_soc.h>
 #include <bm/softdevice_handler/nrf_sdh.h>
 #include <bm/bm_scheduler.h>
-#include <zephyr/toolchain.h>
-#include <zephyr/logging/log.h>
-#include <zephyr/sys/atomic.h>
-#include <zephyr/sys/iterable_sections.h>
+#include "bm_compat.h"
 
-LOG_MODULE_REGISTER(nrf_sdh, CONFIG_NRF_SDH_LOG_LEVEL);
 
 #if defined(CONFIG_NRF_SDH_CLOCK_LF_SRC_XO)
 BUILD_ASSERT(CONFIG_NRF_SDH_CLOCK_LF_RC_CTIV == 0, "rc_ctiv must be 0 when using LFXO");

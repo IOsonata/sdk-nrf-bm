@@ -10,14 +10,11 @@
 #include <bm/bluetooth/ble_conn_params.h>
 #include <bm/bluetooth/ble_radio_notification.h>
 
-#include <zephyr/kernel.h>
-#include <zephyr/logging/log.h>
-#include <zephyr/logging/log_ctrl.h>
+#include "bm_compat.h"
 
 #include <hal/nrf_gpio.h>
 #include <board-config.h>
 
-LOG_MODULE_REGISTER(app, CONFIG_APP_BLE_RADIO_NOTIFICATION_LOG_LEVEL);
 
 /* BLE advertising instance */
 BLE_ADV_DEF(ble_adv);

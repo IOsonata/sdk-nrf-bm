@@ -4,13 +4,10 @@
  * SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
  */
 
-#include <zephyr/kernel.h>
-#include <zephyr/logging/log.h>
-#include <zephyr/logging/log_ctrl.h>
+#include "bm_compat.h"
 #include <nrfx_pwm.h>
 #include <board-config.h>
 
-LOG_MODULE_REGISTER(app, CONFIG_APP_PWM_LOG_LEVEL);
 
 /* nrfx PWM instance index. */
 #define PWM_INST NRF_PWM20

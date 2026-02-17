@@ -1,7 +1,7 @@
 .. _lib_nfc_t4t:
 
-NFC Type 4 Tag library
-######################
+Type 4 Tag
+##########
 
 .. contents::
    :local:
@@ -25,36 +25,15 @@ The library supports three different modes of emulation:
 
    * - Mode
      - Description
-   * - Raw ISO-DEP
-     - All APDUs are signaled through the callback. Application handles responses.
    * - Read-only NDEF
      - NDEF file cannot be modified. Only field status and read events are signaled.
    * - Read-write NDEF
      - NDEF file can be modified. Changes to NDEF content are signaled through callback.
+   * - Raw ISO-DEP
+     - All APDUs are signaled through the callback. Application handles responses.
 
-File structure
-**************
-
-A Type 4 Tag contains at least two Elementary Files:
-
-* Capability Container (CC) - A read-only metafile containing the version of the implemented specification, communication parameters, and properties of all other EF files.
-
-* NDEF File - Contains the NDEF message.
-  The file format consists of the following objects:
-
-   .. list-table::
-      :header-rows: 1
-      :widths: 15 15 70
-
-      * - Field
-        - Length
-        - Description
-      * - NLEN
-        - 2 bytes
-        - Length of the NDEF message in big-endian format
-      * - NDEF Message
-        - NLEN bytes
-        - The actual NDEF message content
+.. note::
+   Raw ISO-DEP mode is supported by the nrfxlib library but is not implemented in |BMshort| (no sample or application support).
 
 Configuration
 *************
@@ -108,28 +87,31 @@ For read-only or read-write NDEF tag emulation:
 
 #. Set NDEF payload.
 
-   For read-only mode, use the :c:func:`nfc_t4t_ndef_staticpayload_set` function:
+   First encode the NDEF file (see :ref:`nfc_t4t_ndef_file_readme`) for use as the tag payload.
+   Then pass the resulting buffer to one of the following:
 
-   .. code-block:: c
+   a. For read-only mode, use the :c:func:`nfc_t4t_ndef_staticpayload_set` function:
 
-      static const uint8_t ndef_msg[] = { /* NDEF message data */ };
+      .. code-block:: c
 
-      err = nfc_t4t_ndef_staticpayload_set(ndef_msg, sizeof(ndef_msg));
-      if (err != 0) {
-          /* Handle error */
-      }
+         static const uint8_t ndef_msg[] = { /* NDEF message data */ };
 
-   For read-write mode, use the :c:func:`nfc_t4t_ndef_rwpayload_set` function:
+         err = nfc_t4t_ndef_staticpayload_set(ndef_msg, sizeof(ndef_msg));
+         if (err != 0) {
+             /* Handle error */
+         }
 
-   .. code-block:: c
+   #. For read-write mode, use the :c:func:`nfc_t4t_ndef_rwpayload_set` function:
 
-      static uint8_t ndef_buffer[1024];
-      /* Initialize ndef_buffer with initial NDEF message */
+      .. code-block:: c
 
-      err = nfc_t4t_ndef_rwpayload_set(ndef_buffer, sizeof(ndef_buffer));
-      if (err != 0) {
-          /* Handle error */
-      }
+         static uint8_t ndef_buffer[1024];
+
+         /* Initialize ndef_buffer with initial NDEF message */
+         err = nfc_t4t_ndef_rwpayload_set(ndef_buffer, sizeof(ndef_buffer));
+         if (err != 0) {
+             /* Handle error */
+         }
 
 #. Start emulation.
 
@@ -139,15 +121,6 @@ For read-only or read-write NDEF tag emulation:
       if (err != 0) {
           /* Handle error */
       }
-
-Raw ISO-DEP mode
-================
-
-For raw mode where the application handles all APDUs, perform the following steps:
-
-1. Call the :c:func:`nfc_t4t_setup` function with a callback.
-#. Call the :c:func:`nfc_t4t_emulation_start` function directly (without setting NDEF payload).
-#. Handle the :c:enumerator:`NFC_T4T_EVENT_DATA_IND` events and respond using the :c:func:`nfc_t4t_response_pdu_send` function.
 
 Events
 ******
@@ -197,12 +170,12 @@ This library requires the following drivers and libraries:
 
 * NFCT driver from `nrfx`_
 * :ref:`lib_nfc_platform`
-* `NDEF library`_ (for encoding NDEF messages)
+* NDEF encoding (for example, :ref:`nfc_ndef_msg` and :ref:`nfc_t4t_ndef_file_readme`)
 
 The :ref:`record_text_t4t_sample` sample demonstrates how to use this library.
 
-API documentation
-*****************
+API reference
+*************
 
 | Header file: :file:`nrfxlib/nfc/include/nfc_t4t_lib.h`
 | Library: :file:`nrfxlib/nfc/lib/`

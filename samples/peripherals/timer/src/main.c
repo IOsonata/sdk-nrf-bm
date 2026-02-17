@@ -5,11 +5,8 @@
  */
 
 #include <bm/bm_timer.h>
-#include <zephyr/kernel.h>
-#include <zephyr/logging/log.h>
-#include <zephyr/logging/log_ctrl.h>
+#include "bm_compat.h"
 
-LOG_MODULE_REGISTER(app, CONFIG_APP_TIMER_LOG_LEVEL);
 
 #define PERIODIC_TIMER_TICKS BM_TIMER_MS_TO_TICKS(CONFIG_APP_PERIODIC_TIMER_INTERVAL_MS)
 #define HELLO_TIMER_TICKS    BM_TIMER_MS_TO_TICKS(CONFIG_APP_HELLO_TIMER_DURATION_MS)

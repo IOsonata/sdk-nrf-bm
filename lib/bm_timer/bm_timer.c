@@ -5,11 +5,8 @@
  */
 
 #include <bm/bm_timer.h>
-#include <zephyr/kernel.h>
-#include <zephyr/logging/log.h>
-#include <zephyr/sys/__assert.h>
+#include "bm_compat.h"
 
-LOG_MODULE_REGISTER(bm_timer, CONFIG_BM_TIMER_LOG_LEVEL);
 
 #if CONFIG_SOC_SERIES_NRF54L
 #include <hal/nrf_grtc.h>

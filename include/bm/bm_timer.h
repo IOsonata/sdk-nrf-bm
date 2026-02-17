@@ -14,9 +14,7 @@
 #define BM_TIMER_H__
 
 #include <stdint.h>
-#include <zephyr/kernel.h>
-#include <zephyr/sys/time_units.h>
-#include <zephyr/sys/util.h>
+#include "bm_compat.h"
 
 #ifdef __cplusplus
 extern "C" {

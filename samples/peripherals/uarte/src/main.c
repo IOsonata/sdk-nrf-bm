@@ -4,14 +4,11 @@
  * SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
  */
 
-#include <zephyr/kernel.h>
-#include <zephyr/logging/log.h>
-#include <zephyr/logging/log_ctrl.h>
+#include "bm_compat.h"
 
 #include <board-config.h>
 #include <nrfx_uarte.h>
 
-LOG_MODULE_REGISTER(app, CONFIG_APP_UARTE_LOG_LEVEL);
 
 /** Application UARTE instance */
 static nrfx_uarte_t uarte_inst = NRFX_UARTE_INSTANCE(BOARD_APP_UARTE_INST);

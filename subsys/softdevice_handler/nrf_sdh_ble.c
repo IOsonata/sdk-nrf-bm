@@ -10,11 +10,10 @@
 #include <ble.h>
 #include <bm/softdevice_handler/nrf_sdh.h>
 #include <bm/softdevice_handler/nrf_sdh_ble.h>
-#include <zephyr/logging/log.h>
+#include "bm_compat.h"
 
 #define APP_RAM_START DT_REG_ADDR(DT_CHOSEN(zephyr_sram))
 
-LOG_MODULE_DECLARE(nrf_sdh, CONFIG_NRF_SDH_LOG_LEVEL);
 
 #define PERIPHERAL_LINKS                                                                           \
 	COND_CODE_1(CONFIG_NRF_SDH_BLE_PERIPHERAL_LINK_COUNT,                                      \

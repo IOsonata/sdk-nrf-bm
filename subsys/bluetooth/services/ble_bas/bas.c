@@ -9,9 +9,8 @@
 #include <bm/bluetooth/services/ble_bas.h>
 #include <bm/bluetooth/services/common.h>
 #include <bm/bluetooth/services/uuid.h>
-#include <zephyr/logging/log.h>
+#include "bm_compat.h"
 
-LOG_MODULE_REGISTER(ble_bas, CONFIG_BLE_BAS_LOG_LEVEL);
 
 static uint32_t battery_level_char_add(struct ble_bas *bas, const struct ble_bas_config *cfg)
 {

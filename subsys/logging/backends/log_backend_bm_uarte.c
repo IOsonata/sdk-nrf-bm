@@ -4,9 +4,7 @@
  * SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
  */
 
-#include <zephyr/logging/log_backend.h>
-#include <zephyr/logging/log_backend_std.h>
-#include <zephyr/logging/log_msg.h>
+#include "bm_compat.h"
 
 #include <nrfx_uarte.h>
 #include <board-config.h>

@@ -5,9 +5,7 @@
  */
 
 #include <string.h>
-#include <zephyr/logging/log.h>
-#include <zephyr/sys/util.h>
-#include <zephyr/sys/__assert.h>
+#include "bm_compat.h"
 #include <nrf_error.h>
 #include <nrf_strerror.h>
 #include <bm/bluetooth/peer_manager/peer_manager_types.h>
@@ -16,7 +14,6 @@
 #include <modules/pm_buffer.h>
 #include <modules/peer_database.h>
 
-LOG_MODULE_DECLARE(peer_manager, CONFIG_PEER_MANAGER_LOG_LEVEL);
 
 /**
  * @brief Macro for verifying that the data ID is among the values eligible for using the write

@@ -18,12 +18,7 @@
 #include <bm/softdevice_handler/nrf_sdh.h>
 #include <bm/softdevice_handler/nrf_sdh_ble.h>
 
-#include <zephyr/kernel.h>
-#include <zephyr/logging/log.h>
-#include <zephyr/logging/log_ctrl.h>
-#include <zephyr/sys/util.h>
-#include <zephyr/toolchain.h>
-#include <zephyr/drivers/retained_mem/nrf_retained_mem.h>
+#include "bm_compat.h"
 
 #include <hal/nrf_regulators.h>
 #include <hal/nrf_gpio.h>
@@ -34,7 +29,6 @@
 
 #include <board-config.h>
 
-LOG_MODULE_REGISTER(app, CONFIG_APP_BLE_PWR_PROFILING_LOG_LEVEL);
 
 /** Custom UUID base for the Service. */
 #define BLE_UUID_BASE { 0x23, 0xD1, 0xBC, 0xEA, 0x5F, 0x78, 0x23, 0x15, \

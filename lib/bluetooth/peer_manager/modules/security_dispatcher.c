@@ -22,11 +22,8 @@
 #include <modules/auth_status_tracker.h>
 #endif /* CONFIG_PM_RA_PROTECTION */
 
-#include <zephyr/logging/log.h>
-#include <zephyr/sys/util.h>
-#include <zephyr/sys/__assert.h>
+#include "bm_compat.h"
 
-LOG_MODULE_DECLARE(peer_manager, CONFIG_PEER_MANAGER_LOG_LEVEL);
 
 /* The number of registered event handlers. */
 #define SMD_EVENT_HANDLERS_CNT ARRAY_SIZE(evt_handlers)

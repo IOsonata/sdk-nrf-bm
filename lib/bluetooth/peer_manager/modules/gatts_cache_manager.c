@@ -6,9 +6,7 @@
 
 
 #include <string.h>
-#include <zephyr/logging/log.h>
-#include <zephyr/sys/util.h>
-#include <zephyr/sys/__assert.h>
+#include "bm_compat.h"
 #include <nrf_error.h>
 #include <nrf_strerror.h>
 #include <ble_gap.h>
@@ -20,7 +18,6 @@
 #include <modules/id_manager.h>
 #include <modules/gatts_cache_manager.h>
 
-LOG_MODULE_DECLARE(peer_manager, CONFIG_PEER_MANAGER_LOG_LEVEL);
 
 #if defined(CONFIG_PM_SERVICE_CHANGED)
 

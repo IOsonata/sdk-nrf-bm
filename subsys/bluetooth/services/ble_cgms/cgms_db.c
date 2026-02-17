@@ -7,9 +7,8 @@
 #include <stdint.h>
 #include "cgms_db.h"
 
-#include <zephyr/logging/log.h>
+#include "bm_compat.h"
 
-LOG_MODULE_DECLARE(ble_cgms, CONFIG_BLE_CGMS_LOG_LEVEL);
 
 struct database_entry {
 	bool in_use_flag;

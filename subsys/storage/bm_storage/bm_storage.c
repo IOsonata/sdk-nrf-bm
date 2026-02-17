@@ -5,7 +5,7 @@
  */
 
 #include <errno.h>
-#include <zephyr/kernel.h>
+#include "bm_compat.h"
 #include <sys/types.h>
 #include <bm/storage/bm_storage.h>
 #include <bm/storage/bm_storage_backend.h>

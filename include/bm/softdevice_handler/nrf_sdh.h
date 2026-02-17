@@ -15,9 +15,7 @@
 #define NRF_SDH_H__
 
 #include <stdbool.h>
-#include <zephyr/toolchain.h>
-#include <zephyr/sys/util.h>
-#include <zephyr/sys/iterable_sections.h>
+#include "bm_compat.h"
 
 #ifdef __cplusplus
 extern "C" {

@@ -19,14 +19,10 @@
 #include <bm/drivers/bm_lpuarte.h>
 #endif
 
-#include <zephyr/kernel.h>
-#include <zephyr/logging/log.h>
-#include <zephyr/logging/log_ctrl.h>
-#include <zephyr/sys/util.h>
+#include "bm_compat.h"
 
 #include <board-config.h>
 
-LOG_MODULE_REGISTER(app, CONFIG_APP_BLE_NUS_LOG_LEVEL);
 
 BLE_ADV_DEF(ble_adv); /* BLE advertising instance */
 BLE_NUS_DEF(ble_nus); /* BLE NUS service instance */

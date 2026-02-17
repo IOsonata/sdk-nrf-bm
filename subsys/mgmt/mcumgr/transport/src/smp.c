@@ -6,17 +6,10 @@
  */
 
 #include <assert.h>
-#include <zephyr/kernel.h>
-#include <zephyr/device.h>
-#include <zephyr/net_buf.h>
-#include <zephyr/mgmt/mcumgr/mgmt/mgmt.h>
-#include <zephyr/mgmt/mcumgr/smp/smp.h>
-#include <zephyr/mgmt/mcumgr/transport/smp.h>
+#include "bm_compat.h"
 
 #include <mgmt/mcumgr/transport/smp_reassembly.h>
 
-#include <zephyr/logging/log.h>
-LOG_MODULE_REGISTER(mcumgr_smp, CONFIG_MCUMGR_TRANSPORT_LOG_LEVEL);
 
 /* To be able to unit test some callers some functions need to be
  * demoted to allow overriding them.

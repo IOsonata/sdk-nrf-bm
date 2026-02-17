@@ -9,7 +9,7 @@
 #define ZEPHYR_INCLUDE_FS_BM_ZMS_H_
 
 #include <sys/types.h>
-#include <zephyr/sys/atomic.h>
+#include "bm_compat.h"
 #include <stdbool.h>
 #include <bm/storage/bm_storage.h>
 

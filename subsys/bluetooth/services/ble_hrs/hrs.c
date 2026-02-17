@@ -12,11 +12,8 @@
 #include <bm/bluetooth/services/ble_hrs.h>
 #include <bm/bluetooth/services/common.h>
 #include <bm/bluetooth/services/uuid.h>
-#include <zephyr/sys/util.h>
-#include <zephyr/sys/__assert.h>
-#include <zephyr/logging/log.h>
+#include "bm_compat.h"
 
-LOG_MODULE_REGISTER(ble_hrs, CONFIG_BLE_HRS_LOG_LEVEL);
 
 /* Length of ATT header. Opcode (1 byte) and attribute handle (2 bytes). */
 #define ATT_HEADER_LENGTH 3

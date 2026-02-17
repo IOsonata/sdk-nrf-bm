@@ -22,10 +22,8 @@
 #include <modules/id_manager.h>
 #include <modules/peer_manager_internal.h>
 
-#include <zephyr/sys/util.h>
-#include <zephyr/logging/log.h>
+#include "bm_compat.h"
 
-LOG_MODULE_REGISTER(peer_manager, CONFIG_PEER_MANAGER_LOG_LEVEL);
 
 /** Whether or not @ref pm_init has been called successfully. */
 static bool module_initialized;

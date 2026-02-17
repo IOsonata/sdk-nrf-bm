@@ -9,13 +9,12 @@
 #include <stdlib.h>
 
 #include <bm/bluetooth/ble_radio_notification.h>
-#include <zephyr/logging/log.h>
+#include "bm_compat.h"
 
 #if CONFIG_UNITY
 #include <cmsis.h>
 #endif
 
-LOG_MODULE_REGISTER(ble_radio_ntf, CONFIG_BLE_RADIO_NOTIFICATION_LOG_LEVEL);
 
 /* Radio notification type. */
 #if defined(CONFIG_BLE_RADIO_NOTIFICATION_ON_ACTIVE)

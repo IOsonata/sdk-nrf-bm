@@ -21,13 +21,10 @@
 #include <bm/bm_timer.h>
 #include <bm/sensorsim.h>
 
-#include <zephyr/kernel.h>
-#include <zephyr/logging/log.h>
-#include <zephyr/logging/log_ctrl.h>
+#include "bm_compat.h"
 
 #include <board-config.h>
 
-LOG_MODULE_REGISTER(app, CONFIG_APP_BLE_HRS_LOG_LEVEL);
 
 #define CONN_TAG 1
 

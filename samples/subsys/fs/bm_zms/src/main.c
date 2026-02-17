@@ -4,9 +4,7 @@
  * SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
  */
 
-#include <zephyr/kernel.h>
-#include <zephyr/logging/log.h>
-#include <zephyr/logging/log_ctrl.h>
+#include "bm_compat.h"
 
 #define STORAGE_NODE DT_NODELABEL(storage0_partition)
 #define BM_ZMS_PARTITION_OFFSET DT_REG_ADDR(STORAGE_NODE)
@@ -28,7 +26,6 @@ static volatile bool write_notif;
 static volatile bool mount_notif;
 static volatile bool clear_notif;
 
-LOG_MODULE_REGISTER(app, CONFIG_APP_BM_ZMS_LOG_LEVEL);
 
 void bm_zms_sample_handler(const struct bm_zms_evt *evt)
 {

@@ -4,16 +4,9 @@
  * SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
  */
 
-#include <zephyr/kernel.h>
-#include <zephyr/drivers/flash.h>
-#include <zephyr/storage/flash_map.h>
-#include <zephyr/logging/log.h>
-#include <zephyr/logging/log_ctrl.h>
-#include <zephyr/sys/crc.h>
-#include <zephyr/sys/reboot.h>
+#include "bm_compat.h"
 #include <bm_installs.h>
 
-LOG_MODULE_REGISTER(installer, CONFIG_INSTALLER_LOG_LEVEL);
 
 #define IMAGE_DATA_SIZE 64
 #define IMAGE_DATA_ARRAY_SIZE 32

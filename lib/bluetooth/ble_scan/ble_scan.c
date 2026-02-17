@@ -10,9 +10,8 @@
 
 #include <bm/bluetooth/ble_scan.h>
 #include <bm/bluetooth/ble_adv_data.h>
-#include <zephyr/logging/log.h>
+#include "bm_compat.h"
 
-LOG_MODULE_REGISTER(ble_scan, CONFIG_BLE_SCAN_LOG_LEVEL);
 
 uint32_t ble_scan_copy_addr_to_sd_gap_addr(ble_gap_addr_t *gap_addr,
 					   const uint8_t addr[BLE_GAP_ADDR_LEN])

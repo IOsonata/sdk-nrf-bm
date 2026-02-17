@@ -6,13 +6,10 @@
 
 #include <bm/bm_buttons.h>
 
-#include <zephyr/kernel.h>
-#include <zephyr/logging/log.h>
-#include <zephyr/logging/log_ctrl.h>
+#include "bm_compat.h"
 
 #include <board-config.h>
 
-LOG_MODULE_REGISTER(app, CONFIG_APP_BUTTONS_LOG_LEVEL);
 
 static volatile bool running;
 

@@ -4,12 +4,9 @@
  * SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
  */
 
-#include <zephyr/kernel.h>
-#include <zephyr/settings/settings.h>
-#include <zephyr/logging/log.h>
+#include "bm_compat.h"
 #include <bm/settings/bluetooth_name.h>
 
-LOG_MODULE_REGISTER(settings_bluetooth_name, CONFIG_SETTINGS_LOG_LEVEL);
 
 static char bluetooth_name_val[16] = "";
 

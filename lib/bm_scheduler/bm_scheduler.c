@@ -7,14 +7,8 @@
 #include <errno.h>
 #include <string.h>
 #include <bm/bm_scheduler.h>
-#include <zephyr/init.h>
-#include <zephyr/irq.h>
-#include <zephyr/kernel.h>	/* k_heap */
-#include <zephyr/sys/slist.h>
-#include <zephyr/sys/util.h>
-#include <zephyr/logging/log.h>
+#include "bm_compat.h"
 
-LOG_MODULE_REGISTER(bm_scheduler, CONFIG_BM_SCHEDULER_LOG_LEVEL);
 
 static sys_slist_t event_list;
 static K_HEAP_DEFINE(heap, CONFIG_BM_SCHEDULER_BUF_SIZE);

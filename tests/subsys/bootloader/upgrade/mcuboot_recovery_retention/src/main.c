@@ -5,12 +5,8 @@
  */
 
 #include <stdint.h>
-#include <zephyr/kernel.h>
-#include <zephyr/sys/reboot.h>
-#include <zephyr/retention/bootmode.h>
-#include <zephyr/logging/log.h>
+#include "bm_compat.h"
 
-LOG_MODULE_REGISTER(app, CONFIG_APP_LOG_LEVEL);
 
 int main(void)
 {

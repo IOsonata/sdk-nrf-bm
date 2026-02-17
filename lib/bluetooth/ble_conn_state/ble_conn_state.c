@@ -11,10 +11,8 @@
 #include <ble_gap.h>
 #include <bm/bluetooth/ble_conn_state.h>
 #include <bm/softdevice_handler/nrf_sdh_ble.h>
-#include <zephyr/sys/atomic.h>
-#include <zephyr/logging/log.h>
+#include "bm_compat.h"
 
-LOG_MODULE_REGISTER(ble_conn_state, CONFIG_BLE_CONN_STATE_LOG_LEVEL);
 
 #define BLE_CONN_STATE_DEFAULT_FLAG_COLLECTION_COUNT \
 	((sizeof(struct ble_conn_state_flag_collections) / sizeof(atomic_t)) - \
