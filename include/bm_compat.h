@@ -268,6 +268,14 @@ extern "C" {
 #define __unused  __attribute__((unused))
 #endif
 
+#ifndef __fallthrough
+#if __GNUC__ >= 7
+#define __fallthrough  __attribute__((fallthrough))
+#else
+#define __fallthrough  ((void)0)
+#endif
+#endif
+
 #ifndef __deprecated
 #define __deprecated  __attribute__((deprecated))
 #endif
@@ -402,6 +410,64 @@ static inline uint64_t k_uptime_ticks(void)
 static inline uint64_t k_uptime_ticks(void) { return 0; }
 #endif
 
+/*
+ * RTC / timer tick frequency and conversion macros.
+ * Replaces <zephyr/sys/time_units.h>.
+ *
+ * bm_timer uses the 32.768 kHz RTC (LFCLK), not the 16 MHz GRTC.
+ */
+#ifndef TIMER_NRFX_RTC_BASE_FREQ
+#define TIMER_NRFX_RTC_BASE_FREQ  32768
+#endif
+
+#ifndef CONFIG_SYS_CLOCK_TICKS_PER_SEC
+#define CONFIG_SYS_CLOCK_TICKS_PER_SEC  TIMER_NRFX_RTC_BASE_FREQ
+#endif
+
+#define k_ms_to_ticks_floor32(ms) \
+	((uint32_t)(((uint64_t)(ms) * CONFIG_SYS_CLOCK_TICKS_PER_SEC) / 1000U))
+
+#define k_ms_to_ticks_ceil32(ms) \
+	((uint32_t)(((uint64_t)(ms) * CONFIG_SYS_CLOCK_TICKS_PER_SEC + 999U) / 1000U))
+
+#define k_us_to_ticks_floor32(us) \
+	((uint32_t)(((uint64_t)(us) * CONFIG_SYS_CLOCK_TICKS_PER_SEC) / 1000000U))
+
+#define k_us_to_ticks_ceil32(us) \
+	((uint32_t)(((uint64_t)(us) * CONFIG_SYS_CLOCK_TICKS_PER_SEC + 999999U) / 1000000U))
+
+#define k_ticks_to_ms_floor32(ticks) \
+	((uint32_t)(((uint64_t)(ticks) * 1000U) / CONFIG_SYS_CLOCK_TICKS_PER_SEC))
+
+#define k_ticks_to_us_floor32(ticks) \
+	((uint32_t)(((uint64_t)(ticks) * 1000000U) / CONFIG_SYS_CLOCK_TICKS_PER_SEC))
+
+/**
+ * k_busy_wait — spin for N microseconds.
+ * Uses DWT cycle counter when available, NOP loop fallback.
+ */
+static inline void k_busy_wait(uint32_t usec)
+{
+#if defined(DWT) && defined(CoreDebug)
+	CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
+	DWT->CYCCNT = 0;
+	DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
+	uint32_t cycles = (SystemCoreClock / 1000000UL) * usec;
+	while (DWT->CYCCNT < cycles) {
+		/* spin */
+	}
+#else
+	volatile uint32_t count = (SystemCoreClock / 4000000UL) * usec;
+	while (count--) {
+		__NOP();
+	}
+#endif
+}
+
+#ifndef printk
+#define printk(...)  ((void)0)
+#endif
+
 #endif /* BM_COMPAT_KERNEL_H__ */
 
 
@@ -510,46 +576,6 @@ static inline uint32_t sys_cpu_to_be32(uint32_t val) { return sys_be32_to_cpu(va
 #endif
 
 #endif /* BM_COMPAT_INIT_H__ */
-
-
-/* ======================================================================
- * Section: Kernel (partial)  —  replaces <zephyr/kernel.h>
- *
- * Only non-RTOS parts.
- * k_timer  → use IOsonata Timer (bm_timer wrapper or direct)
- * k_sem    → use IOsonata or bare CMSIS
- * k_heap   → use standard malloc or IOsonata allocator
- * ====================================================================== */
-#ifndef BM_COMPAT_KERNEL_H__
-#define BM_COMPAT_KERNEL_H__
-
-/**
- * k_busy_wait — spin for N microseconds.
- * Uses DWT cycle counter when available, NOP loop fallback.
- */
-static inline void k_busy_wait(uint32_t usec)
-{
-#if defined(DWT) && defined(CoreDebug)
-	CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
-	DWT->CYCCNT = 0;
-	DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
-	uint32_t cycles = (SystemCoreClock / 1000000UL) * usec;
-	while (DWT->CYCCNT < cycles) {
-		/* spin */
-	}
-#else
-	volatile uint32_t count = (SystemCoreClock / 4000000UL) * usec;
-	while (count--) {
-		__NOP();
-	}
-#endif
-}
-
-#ifndef printk
-#define printk(...)  ((void)0)
-#endif
-
-#endif /* BM_COMPAT_KERNEL_H__ */
 
 
 /* ======================================================================

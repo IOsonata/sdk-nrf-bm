@@ -55,9 +55,12 @@ in your project's build configuration.
 #endif
 
 #ifndef CONFIG_NRF_SDH_CLOCK_LF_SRC
-#define CONFIG_NRF_SDH_CLOCK_LF_SRC               0
+#define CONFIG_NRF_SDH_CLOCK_LF_SRC               1  /* 0=RC, 1=LFXO (fallback only, runtime uses g_McuOsc) */
 #endif
 
+/* RC calibration defaults — only used when source is RC;
+ * nrf_sdh_enable() forces these to 0 when LFXO is detected at runtime.
+ */
 #ifndef CONFIG_NRF_SDH_CLOCK_LF_RC_CTIV
 #define CONFIG_NRF_SDH_CLOCK_LF_RC_CTIV           16
 #endif
@@ -76,6 +79,32 @@ in your project's build configuration.
 
 #ifndef CONFIG_NRF_SDH_CLOCK_HFINT_CALIBRATION_INTERVAL
 #define CONFIG_NRF_SDH_CLOCK_HFINT_CALIBRATION_INTERVAL  60
+#endif
+
+#ifndef CONFIG_NRF_SDH_DISPATCH_MODEL_IRQ
+#define CONFIG_NRF_SDH_DISPATCH_MODEL_IRQ         1
+#endif
+
+/* SDH dispatch model — define ONE:
+ * CONFIG_NRF_SDH_DISPATCH_MODEL_IRQ is default (defined below).
+ * To use scheduler: #define CONFIG_NRF_SDH_DISPATCH_MODEL_SCHED 1
+ * To use polling:   #define CONFIG_NRF_SDH_DISPATCH_MODEL_POLL  1
+ */
+
+#ifndef CONFIG_NRF_SDH_CLOCK_LF_SRC_XO
+#define CONFIG_NRF_SDH_CLOCK_LF_SRC_XO           1
+#endif
+
+#ifndef CONFIG_NRF_SDH_BLE_SERVICE_CHANGED
+#define CONFIG_NRF_SDH_BLE_SERVICE_CHANGED        0
+#endif
+
+#ifndef CONFIG_NRF_SDH_SOC_RAND_SEED
+#define CONFIG_NRF_SDH_SOC_RAND_SEED              1
+#endif
+
+#ifndef CONFIG_NRF_SDH_STR_TABLES
+#define CONFIG_NRF_SDH_STR_TABLES                 1
 #endif
 
 
@@ -113,6 +142,18 @@ in your project's build configuration.
 #define CONFIG_PM_RA_PROTECTION_REWARD_PERIOD     10000
 #endif
 
+#ifndef CONFIG_PM_PEER_RANKS
+#define CONFIG_PM_PEER_RANKS                      1
+#endif
+
+/* Define to enable: #define CONFIG_PM_SERVICE_CHANGED 1 */
+
+/* Define to enable LESC (undefined = disabled):
+ * #define CONFIG_PM_LESC                     1
+ * #define CONFIG_PM_LESC_GENERATE_NEW_KEYS   1
+ * #define CONFIG_PM_LESC_PRIVATE_KEY_EXPORT  1
+ */
+
 
 /* === BLE GATT Queue === */
 
@@ -130,6 +171,30 @@ in your project's build configuration.
 
 
 /* === BLE Advertising === */
+
+#ifndef CONFIG_BLE_ADV_NAME
+#define CONFIG_BLE_ADV_NAME                       "nRF_BM_device"
+#endif
+
+#ifndef CONFIG_BLE_ADV_RESTART_ON_DISCONNECT
+#define CONFIG_BLE_ADV_RESTART_ON_DISCONNECT      1
+#endif
+
+#ifndef CONFIG_BLE_ADV_EXTENDED_ADVERTISING
+#define CONFIG_BLE_ADV_EXTENDED_ADVERTISING        1
+#endif
+
+#ifndef CONFIG_BLE_ADV_DIRECTED_ADVERTISING
+#define CONFIG_BLE_ADV_DIRECTED_ADVERTISING        1
+#endif
+
+#ifndef CONFIG_BLE_ADV_DIRECTED_ADVERTISING_HIGH_DUTY
+#define CONFIG_BLE_ADV_DIRECTED_ADVERTISING_HIGH_DUTY  1
+#endif
+
+#ifndef CONFIG_BLE_ADV_USE_ALLOW_LIST
+#define CONFIG_BLE_ADV_USE_ALLOW_LIST             0
+#endif
 
 #ifndef CONFIG_BLE_ADV_FAST_ADVERTISING_INTERVAL
 #define CONFIG_BLE_ADV_FAST_ADVERTISING_INTERVAL  32
@@ -206,6 +271,34 @@ in your project's build configuration.
 #define CONFIG_BLE_CONN_PARAMS_PHY                0x00
 #endif
 
+#ifndef CONFIG_BLE_CONN_PARAMS_ATT_MTU
+#define CONFIG_BLE_CONN_PARAMS_ATT_MTU            CONFIG_NRF_SDH_BLE_GATT_MAX_MTU_SIZE
+#endif
+
+#ifndef CONFIG_BLE_CONN_PARAMS_INITIATE_ATT_MTU_EXCHANGE
+#define CONFIG_BLE_CONN_PARAMS_INITIATE_ATT_MTU_EXCHANGE  1
+#endif
+
+#ifndef CONFIG_BLE_CONN_PARAMS_AUTO_ATT_MTU
+#define CONFIG_BLE_CONN_PARAMS_AUTO_ATT_MTU       1
+#endif
+
+#ifndef CONFIG_BLE_CONN_PARAMS_AUTO_DATA_LENGTH
+#define CONFIG_BLE_CONN_PARAMS_AUTO_DATA_LENGTH   1
+#endif
+
+#ifndef CONFIG_BLE_CONN_PARAMS_DISCONNECT_ON_FAILURE
+#define CONFIG_BLE_CONN_PARAMS_DISCONNECT_ON_FAILURE  0
+#endif
+
+#ifndef CONFIG_BLE_CONN_PARAMS_INITIATE_DATA_LENGTH_UPDATE
+#define CONFIG_BLE_CONN_PARAMS_INITIATE_DATA_LENGTH_UPDATE  0
+#endif
+
+#ifndef CONFIG_BLE_CONN_PARAMS_INITIATE_PHY_UPDATE
+#define CONFIG_BLE_CONN_PARAMS_INITIATE_PHY_UPDATE  0
+#endif
+
 
 /* === BLE Conn State === */
 
@@ -226,6 +319,10 @@ in your project's build configuration.
 
 
 /* === BLE Scan === */
+
+#ifndef CONFIG_BLE_SCAN_FILTER
+#define CONFIG_BLE_SCAN_FILTER                    1
+#endif
 
 #ifndef CONFIG_BLE_SCAN_NAME_COUNT
 #define CONFIG_BLE_SCAN_NAME_COUNT                1
@@ -297,6 +394,11 @@ in your project's build configuration.
 
 /* === BLE HIDS === */
 
+/* Define to enable:
+ * #define CONFIG_BLE_HIDS_BOOT_MOUSE     1
+ * #define CONFIG_BLE_HIDS_BOOT_KEYBOARD  1
+ */
+
 #ifndef CONFIG_BLE_HIDS_INPUT_REPORT_MAX_NUM
 #define CONFIG_BLE_HIDS_INPUT_REPORT_MAX_NUM      10
 #endif
@@ -350,6 +452,12 @@ in your project's build configuration.
 
 /* === BLE Radio Notification === */
 
+/* Define ONE to select radio notification type:
+ * #define CONFIG_BLE_RADIO_NOTIFICATION_ON_ACTIVE    1
+ * #define CONFIG_BLE_RADIO_NOTIFICATION_ON_INACTIVE  1
+ * #define CONFIG_BLE_RADIO_NOTIFICATION_ON_BOTH      1
+ */
+
 #ifndef CONFIG_BLE_RADIO_NOTIFICATION_IRQ_PRIO
 #define CONFIG_BLE_RADIO_NOTIFICATION_IRQ_PRIO    3
 #endif
@@ -388,6 +496,46 @@ in your project's build configuration.
 #define CONFIG_BLE_DIS_PNP_VER                    1
 #endif
 
+#ifndef CONFIG_BLE_DIS_SERIAL_NUMBER
+#define CONFIG_BLE_DIS_SERIAL_NUMBER              ""
+#endif
+
+#ifndef CONFIG_BLE_DIS_FW_REVISION
+#define CONFIG_BLE_DIS_FW_REVISION                ""
+#endif
+
+#ifndef CONFIG_BLE_DIS_HW_REVISION
+#define CONFIG_BLE_DIS_HW_REVISION                ""
+#endif
+
+#ifndef CONFIG_BLE_DIS_SW_REVISION
+#define CONFIG_BLE_DIS_SW_REVISION                ""
+#endif
+
+#ifndef CONFIG_BLE_DIS_SYSTEM_ID
+#define CONFIG_BLE_DIS_SYSTEM_ID                  0
+#endif
+
+#ifndef CONFIG_BLE_DIS_SYSTEM_ID_MID
+#define CONFIG_BLE_DIS_SYSTEM_ID_MID              0
+#endif
+
+#ifndef CONFIG_BLE_DIS_SYSTEM_ID_OUI
+#define CONFIG_BLE_DIS_SYSTEM_ID_OUI              0
+#endif
+
+#ifndef CONFIG_BLE_DIS_PNP_ID
+#define CONFIG_BLE_DIS_PNP_ID                     0
+#endif
+
+#ifndef CONFIG_BLE_DIS_REGULATORY_CERT
+#define CONFIG_BLE_DIS_REGULATORY_CERT            0
+#endif
+
+#ifndef CONFIG_BLE_DIS_REGULATORY_CERT_LIST
+#define CONFIG_BLE_DIS_REGULATORY_CERT_LIST       0
+#endif
+
 
 /* === Drivers / Platform === */
 
@@ -424,6 +572,42 @@ in your project's build configuration.
 
 
 /* === Flash / Storage === */
+
+/*
+ * Memory layout from DTS (nRF54L15 S145 SoftDevice):
+ *
+ * SRAM 0x20000000:
+ *   softdevice_static_ram  @ 0x0000  size 0x1780
+ *   softdevice_dynamic_ram @ 0x1780  size 0x3000 (12K)
+ *   app_ram                @ 0x4780  size 0x3B480 (237K)
+ *
+ * RRAM partitions:
+ *   slot0_partition         @ 0x000000  size 1371K
+ *   storage_partition       @ 0x156c00  size 8K
+ *     peer_manager_partition  @ 0x156c00  size 4K
+ *     storage0_partition      @ 0x157c00  size 4K
+ *   softdevice_partition    @ 0x158c00  size 144K
+ */
+
+#ifndef CONFIG_APP_RAM_START
+#define CONFIG_APP_RAM_START              0x20004780UL
+#endif
+
+#ifndef CONFIG_PM_PARTITION_OFFSET
+#define CONFIG_PM_PARTITION_OFFSET        0x156c00UL
+#endif
+
+#ifndef CONFIG_PM_PARTITION_SIZE
+#define CONFIG_PM_PARTITION_SIZE          0x1000UL
+#endif
+
+#ifndef CONFIG_STORAGE0_PARTITION_OFFSET
+#define CONFIG_STORAGE0_PARTITION_OFFSET  0x157c00UL
+#endif
+
+#ifndef CONFIG_STORAGE0_PARTITION_SIZE
+#define CONFIG_STORAGE0_PARTITION_SIZE    0x1000UL
+#endif
 
 #ifndef CONFIG_NRF_RRAM_REGION_ADDRESS_RESOLUTION
 #define CONFIG_NRF_RRAM_REGION_ADDRESS_RESOLUTION 0x1000

@@ -4,17 +4,24 @@
  * SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
  */
 #include <stdint.h>
-#include <nrf_sdm.h>
-#include <nrf_soc.h>
-#include <bm/softdevice_handler/nrf_sdh.h>
-#include <bm/bm_scheduler.h>
+#include <stdatomic.h>
+
+#include "nrf.h"
+#include "nrf_sdm.h"
+#include "nrf_soc.h"
+#include "bm/softdevice_handler/nrf_sdh.h"
+#include "bm/bm_scheduler.h"
 #include "bm_compat.h"
+#include "nrf_sdh_config.h"
+#include "coredev/system_core_clock.h"
+
+extern McuOsc_t g_McuOsc;
 
 
-#if defined(CONFIG_NRF_SDH_CLOCK_LF_SRC_XO)
-BUILD_ASSERT(CONFIG_NRF_SDH_CLOCK_LF_RC_CTIV == 0, "rc_ctiv must be 0 when using LFXO");
-BUILD_ASSERT(CONFIG_NRF_SDH_CLOCK_LF_RC_TEMP_CTIV == 0, "rc_temp_ctiv must be 0 when usings LFXO");
-#endif /* CONFIG_NRF_SDH_CLOCK_LF_SRC_XO */
+/* Clock source is determined at runtime from g_McuOsc.LowPwrOsc.Type,
+ * so compile-time BUILD_ASSERTs for LFXO/RC are not applicable.
+ * The rc_ctiv and rc_temp_ctiv values are set dynamically in nrf_sdh_enable().
+ */
 
 #if defined(CONFIG_NRF_GRTC_TIMER)
 BUILD_ASSERT(IS_ENABLED(CONFIG_NRF_GRTC_START_SYSCOUNTER),
@@ -59,12 +66,6 @@ bool sdh_state_evt_observer_notify(enum nrf_sdh_state_evt state)
 	bool all_ready;
 	bool busy_is_allowed;
 
-	if (IS_ENABLED(CONFIG_NRF_SDH_STR_TABLES)) {
-		LOG_DBG("State change: %s", state_to_str(state));
-	} else {
-		LOG_DBG("State change: %#x", state);
-	}
-
 	all_ready = true;
 	busy_is_allowed = (state == NRF_SDH_STATE_EVT_ENABLE_PREPARE) ||
 			  (state == NRF_SDH_STATE_EVT_DISABLE_PREPARE);
@@ -75,24 +76,18 @@ bool sdh_state_evt_observer_notify(enum nrf_sdh_state_evt state)
 		 */
 		if (busy_is_allowed && obs->is_busy) {
 			obs->is_busy = !!obs->handler(state, obs->context);
-			if (obs->is_busy) {
-				LOG_DBG("SoftDevice observer %p is busy", obs);
-			}
 			all_ready &= !obs->is_busy;
 		} else {
 			busy = obs->handler(state, obs->context);
-			(void) busy;
-			__ASSERT(!busy, "Returning non-zero from these events is ignored");
 		}
 	}
 
 	return !all_ready;
 }
 
-__weak void softdevice_fault_handler(uint32_t id, uint32_t pc, uint32_t info)
+__attribute__((weak)) void softdevice_fault_handler(uint32_t id, uint32_t pc, uint32_t info)
 {
-	LOG_ERR("SoftDevice fault! ID %#x, PC %#x, Info %#x", id, pc, info);
-
+#if 0
 	switch (id) {
 	case NRF_FAULT_ID_SD_ASSERT:
 		LOG_ERR("NRF_FAULT_ID_SD_ASSERT: SoftDevice assert");
@@ -106,32 +101,86 @@ __weak void softdevice_fault_handler(uint32_t id, uint32_t pc, uint32_t info)
 		}
 		break;
 	}
+#endif
 
 	for (;;) {
 		/* loop */
+		__WFE();
+	}
+}
+
+uint8_t nrf_get_lfclk_accuracy(uint32_t ppm)
+{
+	if (ppm < 2)
+	{
+		return 11;
+	}
+	else if (ppm < 5)
+	{
+		return 10;
+	}
+	else if (ppm < 10)
+	{
+		return 9;
+	}
+	else if (ppm < 20)
+	{
+		return 8;
+	}
+	else if (ppm < 30)
+	{
+		return 7;
+	}
+	else if (ppm < 50)
+	{
+		return 6;
+	}
+	else if (ppm < 75)
+	{
+		return 5;
+	}
+	else if (ppm < 100)
+	{
+		return 4;
+	}
+	else if (ppm < 150)
+	{
+		return 3;
+	}
+	else if (ppm < 250)
+	{
+		return 2;
+	}
+	else if (ppm < 500)
+	{
+		return 1;	/* NRF_CLOCK_LF_ACCURACY_250_PPM */
+	}
+	else
+	{
+		return 0;	/* NRF_CLOCK_LF_ACCURACY_500_PPM */
 	}
 }
 
 static int nrf_sdh_enable(void)
 {
 	int err;
+	const bool is_xo = (g_McuOsc.LowPwrOsc.Type != 0);  /* 0 = RC, 1 = LFXO */
 	const nrf_clock_lf_cfg_t clock_lf_cfg = {
-		.source = CONFIG_NRF_SDH_CLOCK_LF_SRC,
-		.rc_ctiv = CONFIG_NRF_SDH_CLOCK_LF_RC_CTIV,
-		.rc_temp_ctiv = CONFIG_NRF_SDH_CLOCK_LF_RC_TEMP_CTIV,
-		.accuracy = CONFIG_NRF_SDH_CLOCK_LF_ACCURACY,
+		.source = g_McuOsc.LowPwrOsc.Type, //CONFIG_NRF_SDH_CLOCK_LF_SRC,
+		.rc_ctiv = is_xo ? 0 : CONFIG_NRF_SDH_CLOCK_LF_RC_CTIV,
+		.rc_temp_ctiv = is_xo ? 0 : CONFIG_NRF_SDH_CLOCK_LF_RC_TEMP_CTIV,
+		.accuracy = nrf_get_lfclk_accuracy(g_McuOsc.LowPwrOsc.Accuracy), //CONFIG_NRF_SDH_CLOCK_LF_ACCURACY,
 		.hfclk_latency = CONFIG_NRF_SDH_CLOCK_HFCLK_LATENCY,
 		.hfint_ctiv = CONFIG_NRF_SDH_CLOCK_HFINT_CALIBRATION_INTERVAL,
 	};
 
 	err = sd_softdevice_enable(&clock_lf_cfg, softdevice_fault_handler);
 	if (err) {
-		LOG_ERR("Failed to enable SoftDevice, nrf_error %#x", err);
 		return -EINVAL;
 	}
 
-	atomic_set(&sdh_is_suspended, false);
-	atomic_set(&sdh_transition, false);
+	sdh_is_suspended = false;
+	sdh_transition = false;
 
 #if defined(CONFIG_NRF_SDH_DISPATCH_MODEL_SCHED)
 	/* Upon enabling the SoftDevice events IRQ, the SoftDevice will request a rand seed.

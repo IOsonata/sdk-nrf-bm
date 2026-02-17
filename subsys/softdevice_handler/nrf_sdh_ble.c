@@ -12,7 +12,19 @@
 #include <bm/softdevice_handler/nrf_sdh_ble.h>
 #include "bm_compat.h"
 
-#define APP_RAM_START DT_REG_ADDR(DT_CHOSEN(zephyr_sram))
+/*
+ * APP_RAM_START — base of application SRAM after SoftDevice reservation.
+ *
+ * From DTS: app_ram: sram@4780 inside cpuapp_sram@20000000
+ *   → 0x20000000 + 0x4780 = 0x20004780
+ *
+ * Override with CONFIG_APP_RAM_START for different SoftDevice configurations
+ * or nRF54L05/L10 variants with different static/dynamic RAM sizes.
+ */
+#ifndef CONFIG_APP_RAM_START
+#define CONFIG_APP_RAM_START  0x20004780UL
+#endif
+#define APP_RAM_START  CONFIG_APP_RAM_START
 
 
 #define PERIPHERAL_LINKS                                                                           \

@@ -14,9 +14,27 @@
 #include <modules/peer_id.h>
 #include <modules/peer_data_storage.h>
 
-#define PEER_MANAGER_NODE DT_NODELABEL(peer_manager_partition)
-#define PEER_MANAGER_PARTITION_OFFSET DT_REG_ADDR(PEER_MANAGER_NODE)
-#define PEER_MANAGER_PARTITION_SIZE DT_REG_SIZE(PEER_MANAGER_NODE)
+/*
+ * Peer Manager flash partition — replaces Zephyr devicetree lookup.
+ *
+ * From DTS (nRF54L15 S145):
+ *   storage_partition@156c00 → peer_manager_partition@0
+ *   ranges: child 0x0 → parent 0x156c00
+ *   reg = <0x0 DT_SIZE_K(4)>  →  offset 0x156c00, size 0x1000
+ *
+ * Override CONFIG_PM_PARTITION_OFFSET / CONFIG_PM_PARTITION_SIZE
+ * for different board variants or partition layouts.
+ */
+#ifndef CONFIG_PM_PARTITION_OFFSET
+#define CONFIG_PM_PARTITION_OFFSET  0x156c00UL
+#endif
+
+#ifndef CONFIG_PM_PARTITION_SIZE
+#define CONFIG_PM_PARTITION_SIZE    0x1000UL
+#endif
+
+#define PEER_MANAGER_PARTITION_OFFSET  CONFIG_PM_PARTITION_OFFSET
+#define PEER_MANAGER_PARTITION_SIZE    CONFIG_PM_PARTITION_SIZE
 
 
 /* The number of registered event handlers. */
