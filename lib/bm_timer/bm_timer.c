@@ -1,55 +1,102 @@
 /*
  * Copyright (c) 2025 Nordic Semiconductor ASA
+ * Modified for IOsonata - Zephyr k_timer replaced with IOsonata Timer
  *
  * SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
  */
 
-#include <bm/bm_timer.h>
-#include "bm_compat.h"
+/**
+ * Thin wrapper that maps sdk-nrf-bm's bm_timer API onto IOsonata's
+ * TimerDev_t trigger system (timer_lf_nrf54.cpp / GRTC).
+ *
+ * Each bm_timer instance claims one IOsonata trigger (= one GRTC CC channel).
+ * The shared TimerDev_t is initialized once by bm_timer_sys_init().
+ */
 
+#include <stddef.h>
+#include <string.h>
+#include <errno.h>
 
-#if CONFIG_SOC_SERIES_NRF54L
-#include <hal/nrf_grtc.h>
-#define BM_TIMER_IRQn GRTC_IRQn
-#else
-#define BM_TIMER_IRQn
-#error "Unsupported"
-#endif /* CONFIG_SOC_SERIES_NRF5xx */
+#include "nrf.h"
+#include "timer_nrfx.h"
+#include "bm_timer.h"
 
-static void irq_prio_lvl_configure(void)
+/*--------------------------------------------------------------------------
+ * Shared IOsonata timer device
+ *--------------------------------------------------------------------------*/
+static TimerDev_t s_TimerDev;
+static bool s_Initialized = false;
+
+/*--------------------------------------------------------------------------
+ * IOsonata → bm_timer callback trampoline
+ *
+ * IOsonata:  void handler(TimerDev_t *pTimer, int TrigNo, void *pContext)
+ * bm_timer:  void handler(void *context)
+ *
+ * pContext points to the bm_timer instance, from which we extract the
+ * user handler and user context.
+ *--------------------------------------------------------------------------*/
+static void bm_timer_trig_handler(TimerDev_t * const pTimer, int TrigNo, void * const pContext)
 {
-	NVIC_SetPriority(BM_TIMER_IRQn, (uint32_t)CONFIG_BM_TIMER_IRQ_PRIO);
+	struct bm_timer *t = (struct bm_timer *)pContext;
 
-	LOG_DBG("Timer IRQ priority level set to %d", CONFIG_BM_TIMER_IRQ_PRIO);
+	if (t && t->handler) {
+		t->handler(t->context);
+	}
 }
 
-static void bm_timer_handler(struct k_timer *timer)
+/*--------------------------------------------------------------------------
+ * Public API
+ *--------------------------------------------------------------------------*/
+
+int bm_timer_sys_init(void)
 {
-	__ASSERT(timer, "timer is NULL");
+	if (s_Initialized) {
+		return 0;
+	}
 
-	struct bm_timer *bm_timer = CONTAINER_OF(timer, struct bm_timer, timer);
-	void *context = k_timer_user_data_get(timer);
+	const TimerCfg_t cfg = {
+		.DevNo    = BM_TIMER_IOSONATA_DEVNO,
+		.ClkSrc   = TIMER_CLKSRC_DEFAULT,
+		.Freq     = 0,       /* 0 = auto select max (16 MHz for GRTC) */
+		.IntPrio  = CONFIG_BM_TIMER_IRQ_PRIO,
+		.EvtHandler = NULL,
+		.bTickInt = false,
+	};
 
-	bm_timer->handler(context);
+	if (!nRFxGrtcInit(&s_TimerDev, &cfg)) {
+		return -EIO;
+	}
+
+	s_Initialized = true;
+
+	return 0;
+}
+
+TimerDev_t *bm_timer_get_timerdev(void)
+{
+	return s_Initialized ? &s_TimerDev : NULL;
 }
 
 int bm_timer_init(struct bm_timer *timer, enum bm_timer_mode mode,
-		    bm_timer_timeout_handler_t timeout_handler)
+		  bm_timer_timeout_handler_t timeout_handler)
 {
-	if (timer == NULL || timeout_handler == NULL) {
+	if (!timer || !timeout_handler) {
 		return -EFAULT;
 	}
 
-	timer->mode = mode;
+	memset(timer, 0, sizeof(*timer));
+	timer->trigno  = -1;
+	timer->mode    = mode;
 	timer->handler = timeout_handler;
-	k_timer_init(&timer->timer, bm_timer_handler, NULL);
+	timer->context = NULL;
 
 	return 0;
 }
 
 int bm_timer_start(struct bm_timer *timer, uint32_t timeout_ticks, void *context)
 {
-	if (timer == NULL) {
+	if (!timer) {
 		return -EFAULT;
 	}
 
@@ -57,31 +104,58 @@ int bm_timer_start(struct bm_timer *timer, uint32_t timeout_ticks, void *context
 		return -EINVAL;
 	}
 
-	k_timeout_t duration = { .ticks = timeout_ticks };
-	k_timeout_t period = (timer->mode == BM_TIMER_MODE_SINGLE_SHOT) ? K_NO_WAIT : duration;
+	if (!s_Initialized) {
+		return -ENXIO;
+	}
 
-	k_timer_user_data_set(&timer->timer, context);
-	k_timer_start(&timer->timer, duration, period);
+	/* If already running, stop first to release the trigger */
+	if (timer->trigno >= 0) {
+		s_TimerDev.DisableTrigger(&s_TimerDev, timer->trigno);
+		timer->trigno = -1;
+	}
+
+	/* Find a free trigger slot */
+	int trigno = s_TimerDev.FindAvailTrigger(&s_TimerDev);
+	if (trigno < 0) {
+		return -ENOMEM;
+	}
+
+	timer->context = context;
+	timer->trigno  = trigno;
+
+	/* Convert ticks to nanoseconds for IOsonata.
+	 * IOsonata GRTC nsPeriod = 1000000000 / Freq.
+	 * nsPeriod for 16 MHz = 62 ns per tick.
+	 * ns = ticks * nsPeriod
+	 */
+	uint64_t nsPeriod = (uint64_t)timeout_ticks * s_TimerDev.nsPeriod;
+
+	TIMER_TRIG_TYPE type = (timer->mode == BM_TIMER_MODE_REPEATED)
+				? TIMER_TRIG_TYPE_CONTINUOUS
+				: TIMER_TRIG_TYPE_SINGLE;
+
+	uint64_t real_ns = s_TimerDev.EnableTrigger(&s_TimerDev, trigno, nsPeriod,
+						    type, bm_timer_trig_handler,
+						    (void *)timer);
+
+	if (real_ns == 0) {
+		timer->trigno = -1;
+		return -EINVAL;
+	}
 
 	return 0;
 }
 
 int bm_timer_stop(struct bm_timer *timer)
 {
-	if (timer == NULL) {
+	if (!timer) {
 		return -EFAULT;
 	}
 
-	k_timer_stop(&timer->timer);
+	if (timer->trigno >= 0 && s_Initialized) {
+		s_TimerDev.DisableTrigger(&s_TimerDev, timer->trigno);
+		timer->trigno = -1;
+	}
 
 	return 0;
 }
-
-static int bm_timer_sys_init(void)
-{
-	irq_prio_lvl_configure();
-
-	return 0;
-}
-
-SYS_INIT(bm_timer_sys_init, APPLICATION, 0);
