@@ -1,17 +1,15 @@
 /**-------------------------------------------------------------------------
 @file	bm_atomic.h
 
-@brief	Zephyr atomic API mapped to C17 <stdatomic.h>
+@brief	Zephyr atomic API — C17 <stdatomic.h> / C++ <atomic>
 
-Maps Zephyr's atomic API to standard C17 atomics.  No GCC builtins,
-no compiler extensions — pure ISO C17.
+Maps Zephyr's atomic API to standard atomics.  Compiles to
+LDREX/STREX on Cortex-M in both C and C++ translation units.
 
-Zephyr atomic_t is int-based (32-bit).  C17 provides _Atomic qualifier
-and <stdatomic.h> functions that compile to LDREX/STREX on Cortex-M.
+C path:   _Atomic int32_t  +  <stdatomic.h> functions (C11/C17)
+C++ path: std::atomic<int32_t>  +  member functions  (C++11 and later)
 
-C++ note: C++23 made <stdatomic.h> available in C++.  For older C++
-standards, use <atomic> with std::atomic<int32_t>.  Since sdk-nrf-bm
-is C code, this header targets C17 only.
+Zephyr atomic_t is int-based (32-bit).
 
 @author	IOsonata
 @date	2025
@@ -24,46 +22,167 @@ is C code, this header targets C17 only.
 
 #include <stdint.h>
 #include <stdbool.h>
-#include <stdatomic.h>
 
 #ifdef __cplusplus
-extern "C" {
-#endif
+/* ======================================================================
+ * C++ path — std::atomic<int32_t>
+ * ====================================================================== */
+#include <atomic>
 
-/* ==========================================================================
- * Types
- *
- * Zephyr: atomic_t is a plain int used with atomic_set/get/cas/etc.
- * C17:    _Atomic int32_t with atomic_store/load/compare_exchange.
- *
- * We define atomic_t as _Atomic int32_t so C17 operations apply directly.
- * atomic_val_t is the non-atomic value type for parameters/returns.
- * ========================================================================== */
+typedef std::atomic<int32_t>  atomic_t;
+typedef int32_t               atomic_val_t;
+typedef std::atomic<void *>   atomic_ptr_t;
+
+#define ATOMIC_INIT(val)  {val}
+
+#define ATOMIC_DEFINE(name, num_bits) \
+	atomic_t name[((num_bits) + 31) / 32]
+
+#define ATOMIC_BITMAP_SIZE(num_bits)  (((num_bits) + 31) / 32)
+
+/* --- Load / Store --- */
+
+static inline atomic_val_t atomic_set(atomic_t *target, atomic_val_t value)
+{
+	return target->exchange(value, std::memory_order_seq_cst);
+}
+
+static inline atomic_val_t atomic_get(const atomic_t *target)
+{
+	return const_cast<atomic_t *>(target)->load(std::memory_order_seq_cst);
+}
+
+/* --- Arithmetic --- */
+
+static inline atomic_val_t atomic_inc(atomic_t *target)
+{
+	return target->fetch_add(1, std::memory_order_seq_cst);
+}
+
+static inline atomic_val_t atomic_dec(atomic_t *target)
+{
+	return target->fetch_sub(1, std::memory_order_seq_cst);
+}
+
+static inline atomic_val_t atomic_add(atomic_t *target, atomic_val_t value)
+{
+	return target->fetch_add(value, std::memory_order_seq_cst);
+}
+
+static inline atomic_val_t atomic_sub(atomic_t *target, atomic_val_t value)
+{
+	return target->fetch_sub(value, std::memory_order_seq_cst);
+}
+
+/* --- Bitwise (whole-word) --- */
+
+static inline atomic_val_t atomic_or(atomic_t *target, atomic_val_t value)
+{
+	return target->fetch_or(value, std::memory_order_seq_cst);
+}
+
+static inline atomic_val_t atomic_and(atomic_t *target, atomic_val_t value)
+{
+	return target->fetch_and(value, std::memory_order_seq_cst);
+}
+
+static inline atomic_val_t atomic_xor(atomic_t *target, atomic_val_t value)
+{
+	return target->fetch_xor(value, std::memory_order_seq_cst);
+}
+
+/* --- Compare-and-swap --- */
+
+static inline bool atomic_cas(atomic_t *target,
+			      atomic_val_t old_value,
+			      atomic_val_t new_value)
+{
+	atomic_val_t expected = old_value;
+	return target->compare_exchange_strong(expected, new_value,
+		std::memory_order_seq_cst, std::memory_order_seq_cst);
+}
+
+/* --- Bit operations (indexed across atomic_t array) --- */
+
+static inline void atomic_set_bit(atomic_t *target, int bit)
+{
+	target[bit / 32].fetch_or((int32_t)(1u << (bit % 32)),
+				  std::memory_order_seq_cst);
+}
+
+static inline void atomic_clear_bit(atomic_t *target, int bit)
+{
+	target[bit / 32].fetch_and((int32_t)~(1u << (bit % 32)),
+				   std::memory_order_seq_cst);
+}
+
+static inline bool atomic_test_bit(const atomic_t *target, int bit)
+{
+	int32_t val = const_cast<atomic_t *>(&target[bit / 32])->load(
+		std::memory_order_seq_cst);
+	return (val & (int32_t)(1u << (bit % 32))) != 0;
+}
+
+static inline bool atomic_test_and_set_bit(atomic_t *target, int bit)
+{
+	int32_t mask = (int32_t)(1u << (bit % 32));
+	int32_t old = target[bit / 32].fetch_or(mask, std::memory_order_seq_cst);
+	return (old & mask) != 0;
+}
+
+static inline bool atomic_test_and_clear_bit(atomic_t *target, int bit)
+{
+	int32_t mask = (int32_t)(1u << (bit % 32));
+	int32_t old = target[bit / 32].fetch_and(~mask, std::memory_order_seq_cst);
+	return (old & mask) != 0;
+}
+
+/* --- Pointer atomics --- */
+
+static inline bool atomic_ptr_cas(atomic_ptr_t *target,
+				  void *old_value,
+				  void *new_value)
+{
+	void *expected = old_value;
+	return target->compare_exchange_strong(expected, new_value,
+		std::memory_order_seq_cst, std::memory_order_seq_cst);
+}
+
+static inline void *atomic_ptr_get(const atomic_ptr_t *target)
+{
+	return const_cast<atomic_ptr_t *>(target)->load(std::memory_order_seq_cst);
+}
+
+static inline void *atomic_ptr_set(atomic_ptr_t *target, void *value)
+{
+	return target->exchange(value, std::memory_order_seq_cst);
+}
+
+/* --- Clear --- */
+
+static inline void atomic_clear(atomic_t *target)
+{
+	target->store(0, std::memory_order_seq_cst);
+}
+
+#else /* !__cplusplus */
+/* ======================================================================
+ * C path — _Atomic int32_t  +  <stdatomic.h>
+ * ====================================================================== */
+#include <stdatomic.h>
 
 typedef _Atomic int32_t  atomic_t;
 typedef int32_t          atomic_val_t;
 
-
-/* ==========================================================================
- * Static initializers
- * ========================================================================== */
-
 #define ATOMIC_INIT(val)  (val)
 
-/**
- * Define an atomic bitmap of at least @p num_bits bits.
- * Creates atomic_t array with ceil(num_bits / 32) elements.
- */
 #define ATOMIC_DEFINE(name, num_bits) \
 	atomic_t name[((num_bits) + 31) / 32]
 
-/** Number of atomic_t words needed for a bitmap of @p num_bits bits. */
 #define ATOMIC_BITMAP_SIZE(num_bits)  (((num_bits) + 31) / 32)
 
 
-/* ==========================================================================
- * Load / Store
- * ========================================================================== */
+/* --- Load / Store --- */
 
 static inline atomic_val_t atomic_set(atomic_t *target, atomic_val_t value)
 {
@@ -75,14 +194,7 @@ static inline atomic_val_t atomic_get(const atomic_t *target)
 	return atomic_load_explicit((atomic_t *)target, memory_order_seq_cst);
 }
 
-
-/* ==========================================================================
- * Arithmetic
- *
- * Zephyr: atomic_inc/dec return OLD value (pre-operation).
- * C17:    atomic_fetch_add/sub also return OLD value.
- * Direct mapping — no adjustment needed.
- * ========================================================================== */
+/* --- Arithmetic --- */
 
 static inline atomic_val_t atomic_inc(atomic_t *target)
 {
@@ -104,12 +216,7 @@ static inline atomic_val_t atomic_sub(atomic_t *target, atomic_val_t value)
 	return atomic_fetch_sub_explicit(target, value, memory_order_seq_cst);
 }
 
-
-/* ==========================================================================
- * Bitwise (whole-word)
- *
- * All return PREVIOUS value (matches both Zephyr and C17).
- * ========================================================================== */
+/* --- Bitwise (whole-word) --- */
 
 static inline atomic_val_t atomic_or(atomic_t *target, atomic_val_t value)
 {
@@ -126,34 +233,19 @@ static inline atomic_val_t atomic_xor(atomic_t *target, atomic_val_t value)
 	return atomic_fetch_xor_explicit(target, value, memory_order_seq_cst);
 }
 
-
-/* ==========================================================================
- * Compare-and-swap
- *
- * Zephyr: bool atomic_cas(target, old_value, new_value)
- * C17:    bool atomic_compare_exchange_strong(target, &expected, desired)
- *         Note: C17 updates expected on failure. Zephyr does not.
- * ========================================================================== */
+/* --- Compare-and-swap --- */
 
 static inline bool atomic_cas(atomic_t *target,
 			      atomic_val_t old_value,
 			      atomic_val_t new_value)
 {
-	/* Local copy — C17 may modify expected on failure */
 	atomic_val_t expected = old_value;
-
 	return atomic_compare_exchange_strong_explicit(
 		target, &expected, new_value,
 		memory_order_seq_cst, memory_order_seq_cst);
 }
 
-
-/* ==========================================================================
- * Bit operations (indexed across atomic_t array)
- *
- * No direct C17 equivalent — built on atomic_fetch_or / atomic_fetch_and.
- * target is treated as array of atomic_t; bit index spans full array.
- * ========================================================================== */
+/* --- Bit operations (indexed across atomic_t array) --- */
 
 static inline void atomic_set_bit(atomic_t *target, int bit)
 {
@@ -176,9 +268,6 @@ static inline bool atomic_test_bit(const atomic_t *target, int bit)
 	return (val & (int32_t)(1u << (bit % 32))) != 0;
 }
 
-/**
- * Atomically test and set bit. Returns PREVIOUS value of the bit.
- */
 static inline bool atomic_test_and_set_bit(atomic_t *target, int bit)
 {
 	int32_t mask = (int32_t)(1u << (bit % 32));
@@ -187,9 +276,6 @@ static inline bool atomic_test_and_set_bit(atomic_t *target, int bit)
 	return (old & mask) != 0;
 }
 
-/**
- * Atomically test and clear bit. Returns PREVIOUS value of the bit.
- */
 static inline bool atomic_test_and_clear_bit(atomic_t *target, int bit)
 {
 	int32_t mask = (int32_t)(1u << (bit % 32));
@@ -198,13 +284,7 @@ static inline bool atomic_test_and_clear_bit(atomic_t *target, int bit)
 	return (old & mask) != 0;
 }
 
-
-/* ==========================================================================
- * Pointer atomics
- *
- * Zephyr: atomic_ptr_t / atomic_ptr_cas for lock-free pointer swaps.
- * C17:    _Atomic(void *) with atomic_compare_exchange_strong.
- * ========================================================================== */
+/* --- Pointer atomics --- */
 
 typedef _Atomic(void *) atomic_ptr_t;
 
@@ -213,7 +293,6 @@ static inline bool atomic_ptr_cas(atomic_ptr_t *target,
 				  void *new_value)
 {
 	void *expected = old_value;
-
 	return atomic_compare_exchange_strong_explicit(
 		target, &expected, new_value,
 		memory_order_seq_cst, memory_order_seq_cst);
@@ -229,19 +308,13 @@ static inline void *atomic_ptr_set(atomic_ptr_t *target, void *value)
 	return atomic_exchange_explicit(target, value, memory_order_seq_cst);
 }
 
-
-/* ==========================================================================
- * Clear (set to zero)
- * ========================================================================== */
+/* --- Clear --- */
 
 static inline void atomic_clear(atomic_t *target)
 {
 	atomic_store_explicit(target, 0, memory_order_seq_cst);
 }
 
-
-#ifdef __cplusplus
-}
-#endif
+#endif /* __cplusplus */
 
 #endif /* BM_ATOMIC_H__ */

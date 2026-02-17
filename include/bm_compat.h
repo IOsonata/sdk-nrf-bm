@@ -214,6 +214,38 @@ extern "C" {
 #define COND_CODE_1(flag, if1, el)           Z_COND_CODE_1(flag, if1, el)
 #endif
 
+/* -------------------------------------------------------------------------
+ * IS_EMPTY(...)  —  expands to 1 when __VA_ARGS__ is empty, 0 otherwise
+ *
+ * Uses the Jens Gustedt technique: four comma-detection probes whose
+ * concatenated 0/1 results form 0001 only when the token list is truly
+ * empty, matching the _IS_EMPTY_CASE_0001 sentinel.
+ * Required by dis.c gatt_char() macro, among others.
+ * ------------------------------------------------------------------------- */
+#ifndef IS_EMPTY
+
+#define _IS_EMPTY_TRIGGER_PAREN_(...) ,
+
+#define _IS_EMPTY_ARG3(_0, _1, _2, ...) _2
+#define _IS_EMPTY_HAS_COMMA(...)        _IS_EMPTY_ARG3(__VA_ARGS__, 1, 0)
+
+#define _IS_EMPTY_PASTE5_(_0, _1, _2, _3, _4)  _0##_1##_2##_3##_4
+#define _IS_EMPTY_PASTE5(_0, _1, _2, _3, _4)   _IS_EMPTY_PASTE5_(_0, _1, _2, _3, _4)
+
+#define _IS_EMPTY_CASE_0001 ,
+
+#define _IS_EMPTY_EVAL(_0, _1, _2, _3)  \
+	_IS_EMPTY_HAS_COMMA(_IS_EMPTY_PASTE5(_IS_EMPTY_CASE_, _0, _1, _2, _3))
+
+#define IS_EMPTY(...)                                                                    \
+	_IS_EMPTY_EVAL(                                                                  \
+		_IS_EMPTY_HAS_COMMA(__VA_ARGS__),                                        \
+		_IS_EMPTY_HAS_COMMA(_IS_EMPTY_TRIGGER_PAREN_ __VA_ARGS__),              \
+		_IS_EMPTY_HAS_COMMA(__VA_ARGS__ (/*empty*/)),                            \
+		_IS_EMPTY_HAS_COMMA(_IS_EMPTY_TRIGGER_PAREN_ __VA_ARGS__ (/*empty*/)))
+
+#endif /* IS_EMPTY */
+
 #endif /* BM_COMPAT_UTIL_H__ */
 
 
