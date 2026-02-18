@@ -18,6 +18,8 @@
 #include "coredev/system_core_clock.h"
 #include "irq_connect.h"
 
+#include "idelay.h"
+
 extern McuOsc_t g_McuOsc;
 
 /* Forward declaration — defined below, needed by nrf_sdh_enable() */
@@ -187,7 +189,7 @@ static int nrf_sdh_enable(void)
 	 * Only set SYSCOUNTEREN (bit 1). Do NOT set AUTOEN, do NOT touch
 	 * CLKCFG, do NOT call TASKS_STOP. The SD handles clock configuration
 	 * internally via the clock_lf_cfg passed to sd_softdevice_enable(). */
-	NRF_GRTC->MODE |= 1;		/* SYSCOUNTEREN */
+	NRF_GRTC->MODE |= 2;		/* SYSCOUNTEREN */
 	NRF_GRTC->TASKS_START = 1;
 
 	/* Sanitize NVIC state for SoftDevice. */
@@ -211,6 +213,7 @@ static int nrf_sdh_enable(void)
 			}
 		}
 	}
+msDelay(1);
 
 	printf("GRTC: MODE=0x%x\r\n", NRF_GRTC->MODE);
 
