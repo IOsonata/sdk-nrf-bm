@@ -12,6 +12,7 @@
 #include <bm/softdevice_handler/nrf_sdh_ble.h>
 #include "bm_compat.h"
 
+#define DEBUG_PRINTF	printf
 /*
  * APP_RAM_START — base of application SRAM after SoftDevice reservation.
  *
@@ -199,7 +200,7 @@ static int default_cfg_set(void)
 
 	err = sd_ble_cfg_set(BLE_GAP_CFG_ROLE_COUNT, &ble_cfg, app_ram_start);
 	if (err) {
-		printf("BLE_GAP_CFG_ROLE_COUNT failed: 0x%x (periph=%d central=%d)\r\n",
+		DEBUG_PRINTF("BLE_GAP_CFG_ROLE_COUNT failed: 0x%x (periph=%d central=%d)\r\n",
 			err,
 			ble_cfg.gap_cfg.role_count_cfg.periph_role_count,
 			ble_cfg.gap_cfg.role_count_cfg.central_role_count);
@@ -213,7 +214,7 @@ static int default_cfg_set(void)
 
 	err = sd_ble_cfg_set(BLE_CONN_CFG_GATT, &ble_cfg, app_ram_start);
 	if (err) {
-		printf("BLE_CONN_CFG_GATT failed: 0x%x\r\n", err);
+		DEBUG_PRINTF("BLE_CONN_CFG_GATT failed: 0x%x\r\n", err);
 	}
 #endif /* NRF_SDH_BLE_GATT_MAX_MTU_SIZE != 23 */
 
@@ -223,7 +224,7 @@ static int default_cfg_set(void)
 
 	err = sd_ble_cfg_set(BLE_COMMON_CFG_VS_UUID, &ble_cfg, app_ram_start);
 	if (err) {
-		printf("BLE_COMMON_CFG_VS_UUID failed: 0x%x\r\n", err);
+		DEBUG_PRINTF("BLE_COMMON_CFG_VS_UUID failed: 0x%x\r\n", err);
 	}
 
 	/* Configure the GATTS attribute table. */
@@ -232,7 +233,7 @@ static int default_cfg_set(void)
 
 	err = sd_ble_cfg_set(BLE_GATTS_CFG_ATTR_TAB_SIZE, &ble_cfg, app_ram_start);
 	if (err) {
-		printf("BLE_GATTS_CFG_ATTR_TAB_SIZE failed: 0x%x\r\n", err);
+		DEBUG_PRINTF("BLE_GATTS_CFG_ATTR_TAB_SIZE failed: 0x%x\r\n", err);
 	}
 
 	/* Configure Service Changed characteristic. */
@@ -242,10 +243,10 @@ static int default_cfg_set(void)
 
 	err = sd_ble_cfg_set(BLE_GATTS_CFG_SERVICE_CHANGED, &ble_cfg, app_ram_start);
 	if (err) {
-		printf("BLE_GATTS_CFG_SERVICE_CHANGED failed: 0x%x\r\n", err);
+		DEBUG_PRINTF("BLE_GATTS_CFG_SERVICE_CHANGED failed: 0x%x\r\n", err);
 	}
 
-	printf("SoftDevice configuration applied\r\n");
+	DEBUG_PRINTF("SoftDevice configuration applied\r\n");
 
 	return 0;
 }
@@ -258,7 +259,7 @@ int nrf_sdh_ble_enable(uint8_t conn_cfg_tag)
 
 	default_cfg_set();
 
-	printf("BLE cfg: RAM=0x%x links=%d periph=%d central=%d MTU=%d VS_UUID=%d ATTR_TAB=%d\r\n",
+	DEBUG_PRINTF("BLE cfg: RAM=0x%x links=%d periph=%d central=%d MTU=%d VS_UUID=%d ATTR_TAB=%d\r\n",
 		app_ram_start_link,
 		CONFIG_NRF_SDH_BLE_TOTAL_LINK_COUNT,
 		CONFIG_NRF_SDH_BLE_PERIPHERAL_LINK_COUNT,
@@ -273,7 +274,7 @@ int nrf_sdh_ble_enable(uint8_t conn_cfg_tag)
 		 * Update CONFIG_APP_RAM_START and linker script RAM ORIGIN
 		 * to match app_ram_minimum for a clean build.
 		 */
-		printf("SD BLE needs app RAM at 0x%x (linker has 0x%x)\r\n",
+		DEBUG_PRINTF("SD BLE needs app RAM at 0x%x (linker has 0x%x)\r\n",
 			app_ram_minimum, app_ram_start_link);
 
 		if (err == NRF_ERROR_INVALID_LENGTH) {
@@ -284,7 +285,7 @@ int nrf_sdh_ble_enable(uint8_t conn_cfg_tag)
 	}
 
 	if (err) {
-		printf("sd_ble_enable failed: err 0x%x, need RAM 0x%x\r\n",
+		DEBUG_PRINTF("sd_ble_enable failed: err 0x%x, need RAM 0x%x\r\n",
 			err, app_ram_minimum);
 		return err;
 	}

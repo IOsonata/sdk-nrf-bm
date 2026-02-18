@@ -5,6 +5,7 @@
  */
 #include <stdint.h>
 #include <stdatomic.h>
+#include <stdio.h>
 
 #include "nrf.h"
 #include "nrf_sdm.h"
@@ -179,26 +180,43 @@ static int nrf_sdh_enable(void)
 		.hfint_ctiv = CONFIG_NRF_SDH_CLOCK_HFINT_CALIBRATION_INTERVAL,
 	};
 
-	/* S145 requires GRTC SYSCOUNTER running with AUTOEN before
-	 * sd_softdevice_enable.  In Zephyr this is done by the GRTC
-	 * driver at boot; in bare-metal we do it here.
-	 *
-	 * The LF clock source is configured by the SD via clock_lf_cfg.source,
-	 * not through a GRTC register.
-	 */
-#ifndef GRTC_MODE_AUTOEN_CntAuto
-#define GRTC_MODE_AUTOEN_CntAuto  (1UL << 0)
-#endif
-#ifndef GRTC_MODE_SYSCOUNTEREN_Enabled
-#define GRTC_MODE_SYSCOUNTEREN_Enabled  (1UL << 1)
-#endif
-	NRF_GRTC->MODE |= (GRTC_MODE_AUTOEN_CntAuto
-			  | GRTC_MODE_SYSCOUNTEREN_Enabled);
+	/* S145 requires GRTC SYSCOUNTER running before sd_softdevice_enable.
+	 * Match the proven IOsonata SDC/MPSL init sequence (nrf_mpsl.cpp:96-97):
+	 *   NRF_GRTC->MODE |= 2;
+	 *   NRF_GRTC->TASKS_START = 1;
+	 * Only set SYSCOUNTEREN (bit 1). Do NOT set AUTOEN, do NOT touch
+	 * CLKCFG, do NOT call TASKS_STOP. The SD handles clock configuration
+	 * internally via the clock_lf_cfg passed to sd_softdevice_enable(). */
+	NRF_GRTC->MODE |= 1;		/* SYSCOUNTEREN */
 	NRF_GRTC->TASKS_START = 1;
+
+	/* Sanitize NVIC state for SoftDevice. */
+	{
+		static const IRQn_Type sd_irqs[] = {
+			RADIO_0_IRQn, TIMER10_IRQn, GRTC_3_IRQn,
+			AAR00_CCM00_IRQn, ECB00_IRQn, CLOCK_POWER_IRQn,
+			SWI00_IRQn, SWI01_IRQn, SWI02_IRQn
+		};
+		for (unsigned i = 0; i < sizeof(sd_irqs)/sizeof(sd_irqs[0]); i++) {
+			NVIC_DisableIRQ(sd_irqs[i]);
+			NVIC_ClearPendingIRQ(sd_irqs[i]);
+			NVIC_SetPriority(sd_irqs[i], 4);
+		}
+		for (int irqn = 0; irqn < 240; irqn++) {
+			if (NVIC_GetEnableIRQ((IRQn_Type)irqn)) {
+				uint32_t prio = NVIC_GetPriority((IRQn_Type)irqn);
+				if (prio < 2) {
+					NVIC_SetPriority((IRQn_Type)irqn, 2);
+				}
+			}
+		}
+	}
+
+	printf("GRTC: MODE=0x%x\r\n", NRF_GRTC->MODE);
 
 	err = sd_softdevice_enable(&clock_lf_cfg, softdevice_fault_handler);
 	if (err) {
-		LOG_ERR("sd_softdevice_enable failed: SD err 0x%x", err);
+		printf("sd_softdevice_enable failed: SD err 0x%x\r\n", err);
 		return -EINVAL;
 	}
 
@@ -210,18 +228,14 @@ static int nrf_sdh_enable(void)
 	sdh_is_suspended = false;
 	sdh_transition = false;
 
-#if defined(CONFIG_NRF_SDH_DISPATCH_MODEL_SCHED)
-	/* Upon enabling the SoftDevice events IRQ, the SoftDevice will request a rand seed.
-	 * When the events are dispatched by the scheduler, it won't be possible to
-	 * enable Bluetooth until that event has been processed (in the main() loop).
-	 * To avoid this, we seed the SoftDevice before enabling the interrupt so
-	 * that no event is generated, and the application can complete the BLE
-	 * initialization before reaching the main() loop.
-	 */
-	BUILD_ASSERT(IS_ENABLED(CONFIG_NRF_SDH_SOC_RAND_SEED));
-	extern void sdh_soc_rand_seed(uint32_t evt, void *ctx);
-	(void) sdh_soc_rand_seed(NRF_EVT_RAND_SEED_REQUEST, NULL);
-#endif /* CONFIG_NRF_SDH_DISPATCH_MODEL_SCHED */
+	/* The SoftDevice requires RNG seeding after enable, before sd_ble_enable().
+	 * Without this, sd_ble_enable() returns 0x8 (NRF_ERROR_INVALID_STATE).
+	 * In Zephyr this was gated behind DISPATCH_MODEL_SCHED, but in bare-metal
+	 * we must always do it synchronously here. */
+	{
+		extern void sdh_soc_rand_seed(uint32_t evt, void *ctx);
+		(void) sdh_soc_rand_seed(NRF_EVT_RAND_SEED_REQUEST, NULL);
+	}
 
 	/* Enable event interrupt.
 	 * SYS_INIT is stripped in bare-metal, so wire the SD event IRQ here
@@ -256,12 +270,18 @@ static int nrf_sdh_disable(void)
 int nrf_sdh_enable_request(void)
 {
 	bool busy;
-	uint8_t enabled;
 
-	(void)sd_softdevice_is_enabled(&enabled);
-	if (enabled) {
-		return -EALREADY;
-	}
+	/* Handle warm reset (debugger, watchdog): SRAM is retained and
+	 * the SD's "enabled" flag from the previous session survives.
+	 * Zero the SD's static+dynamic RAM region to clear stale state
+	 * instead of calling sd_softdevice_disable() which tears down
+	 * GRTC and other peripherals we can't fully reconstruct.
+	 *
+	 * SD RAM layout (from DTS):
+	 *   Static:  0x20000000 - 0x2000177F  (6K)
+	 *   Dynamic: 0x20001780 - 0x2000477F  (12K)
+	 */
+	memset((void *)0x20000000, 0, 0x4780);
 
 	if (sdh_transition) {
 		return -EINPROGRESS;

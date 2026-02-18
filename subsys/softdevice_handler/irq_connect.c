@@ -230,13 +230,15 @@ int sd_irq_init(void)
 	 *    how the linker resolved weak vs strong symbols at link time. */
 	sd_patch_system_vectors();
 
-	/* 2. Set SD base address and run SD reset handler.
-	 *    SVC forwarding is now functional (vectors patched above). */
+	/* 2. Set SD base address so SVC forwarding knows where to jump.
+	 *    Do NOT call CallSoftDeviceResetHandler() here — it makes
+	 *    sd_softdevice_is_enabled() return true, which causes
+	 *    nrf_sdh_enable_request() to skip sd_softdevice_enable().
+	 *    The reset handler is called in nrf_sdh_enable() instead. */
 	softdevice_vector_forward_address = FIXED_PARTITION_OFFSET(softdevice_partition);
 #ifdef CONFIG_BOOTLOADER_MCUBOOT
 	softdevice_vector_forward_address += CONFIG_ROM_START_OFFSET;
 #endif
-	CallSoftDeviceResetHandler();
 
 	return 0;
 }

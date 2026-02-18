@@ -13,13 +13,21 @@ extern "C" {
 /**
  * @brief Initialize SVC/IRQ forwarding to SoftDevice (phase 1).
  *
- * Must be called before any SoftDevice SVCALL (e.g. sd_softdevice_is_enabled).
- * Sets up vector table patching, peripheral IRQ forwarding, and runs
- * the SoftDevice reset handler.
+ * Relocates vector table to RAM, patches SVC/HardFault forwarding,
+ * and sets the SD base address.  Must be called before any SoftDevice
+ * SVCALL (e.g. sd_softdevice_is_enabled).
  *
  * @return 0 on success.
  */
 int sd_irq_init(void);
+
+/**
+ * @brief Run the SoftDevice reset handler.
+ *
+ * Initializes SD internal RAM state.  Must be called after sd_irq_init()
+ * and before sd_softdevice_enable().
+ */
+void CallSoftDeviceResetHandler(void);
 
 /**
  * @brief Connect SD-owned peripheral IRQs (phase 2).
