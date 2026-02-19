@@ -189,7 +189,7 @@ static int nrf_sdh_enable(void)
 	 * Only set SYSCOUNTEREN (bit 1). Do NOT set AUTOEN, do NOT touch
 	 * CLKCFG, do NOT call TASKS_STOP. The SD handles clock configuration
 	 * internally via the clock_lf_cfg passed to sd_softdevice_enable(). */
-	NRF_GRTC->MODE |= 1;		/* SYSCOUNTEREN */
+	NRF_GRTC->MODE |= 3;		/* SYSCOUNTEREN */
 	NRF_GRTC->TASKS_START = 1;
 
 	/* Sanitize NVIC state for SoftDevice. */
@@ -213,7 +213,7 @@ static int nrf_sdh_enable(void)
 			}
 		}
 	}
-msDelay(10);
+msDelay(100);
 
 	printf("GRTC: MODE=0x%x\r\n", NRF_GRTC->MODE);
 
@@ -226,7 +226,7 @@ msDelay(10);
 	/* Phase 2: now that the SD is running, connect its peripheral IRQs
 	 * and enable the forwarding path.  Must be after sd_softdevice_enable
 	 * because the SD validates interrupt config during enable. */
-	sd_irq_post_enable();
+	//sd_irq_post_enable();
 
 	atomic_set(&sdh_is_suspended, false);
 	atomic_set(&sdh_transition, false);
@@ -243,7 +243,7 @@ msDelay(10);
 	/* Enable event interrupt.
 	 * SYS_INIT is stripped in bare-metal, so wire the SD event IRQ here
 	 * (was originally done by SYS_INIT(sd_irq_init) at boot). */
-	IRQ_DIRECT_CONNECT(SD_EVT_IRQn, 4, sd_direct_isr, 0);
+	//IRQ_DIRECT_CONNECT(SD_EVT_IRQn, 4, sd_direct_isr, 0);
 	NVIC_EnableIRQ((IRQn_Type)SD_EVT_IRQn);
 
 	(void)sdh_state_evt_observer_notify(NRF_SDH_STATE_EVT_ENABLED);
