@@ -135,50 +135,94 @@ extern "C" {
 #define USEC_PER_MSEC  1000UL
 #endif
 
+/* Shared helper: strip parentheses.  Used by COND_CODE_1 and LISTIFY. */
+#ifndef _DEBRACKET
+#define _DEBRACKET(...)  __VA_ARGS__
+#endif
+
 /**
  * IS_ENABLED — test boolean Kconfig options.
  * Returns 1 if macro is defined to 1, 0 otherwise.
+ *
+ * How it works (3 helpers + 1 sentinel + prescan layer):
+ *   IS_ENABLED(CONFIG_FOO) where CONFIG_FOO=1:
+ *     → _IS_EN_EXPAND(_IS_EN_##1)       — prescan expands CONFIG_FOO to 1
+ *     → _IS_EN_EXPAND(_IS_EN_1)         — ## pastes the expanded value
+ *     → _IS_EN_TEST(_IS_EN_MATCH,)      — _IS_EN_1 sentinel adds comma
+ *     → _IS_EN_PICK(_IS_EN_MATCH, 1, 0) — picks 1
+ *
+ *   IS_ENABLED(CONFIG_BAR) where CONFIG_BAR is undefined or 0:
+ *     → _IS_EN_EXPAND(_IS_EN_0)         — no sentinel
+ *     → _IS_EN_TEST(_IS_EN_0)           — no expansion
+ *     → _IS_EN_PICK(_IS_EN_0 1, 0)      — 2 args, picks 0
+ *
+ * Note: COND_CODE_1 and IS_ENABLED both need a "prescan layer" because
+ * the C preprocessor does NOT expand macro arguments adjacent to ##.
+ * The outer macro (IS_ENABLED / COND_CODE_1) forces expansion of the
+ * argument before it reaches the inner macro where ## pasting occurs.
  */
 #ifndef IS_ENABLED
-#define _ZZZZ1                            _ZIGN,
-#define _IS_ENABLED_3(_ign, val, ...)     val
-#define _IS_ENABLED_2(one_or_two)         _IS_ENABLED_3(one_or_two 1, 0)
-#define _IS_ENABLED_1(x)                  _IS_ENABLED_2(_ZZZZ ## x)
-#define IS_ENABLED(config_macro)          _IS_ENABLED_1(config_macro)
+#define _IS_EN_1                       _IS_EN_MATCH,
+#define _IS_EN_PICK(_ign, val, ...)    val
+#define _IS_EN_TEST(x)                 _IS_EN_PICK(x 1, 0)
+#define _IS_EN_EXPAND(x)              _IS_EN_TEST(_IS_EN_##x)
+#define IS_ENABLED(config_macro)       _IS_EN_EXPAND(config_macro)
 #endif
 
 /**
  * COND_CODE_1 — conditional expansion based on macro value.
- * If flag == 1, expand if1 (parenthesized); else expand el.
+ * If flag == 1, expand if1 (parenthesized); else expand el (parenthesized).
+ *
+ * How it works (3 helpers + 1 sentinel + prescan layer):
+ *   COND_CODE_1(1, (yes), (no)):
+ *     → _CC1_EXPAND(1, (yes), (no))         — prescan expands flag
+ *     → _CC1_TEST(_CC1_##1, (yes), (no))    — ## pastes the expanded value
+ *     → _CC1_TEST(_CC1_MATCH,, (yes), (no)) — sentinel adds comma
+ *     → _CC1_PICK(_CC1_MATCH, (yes), (no))  — picks & debraces (yes)
+ *
+ *   COND_CODE_1(0, (yes), (no)):
+ *     → _CC1_EXPAND(0, (yes), (no))         — prescan (0 stays 0)
+ *     → _CC1_TEST(_CC1_0, (yes), (no))      — no sentinel
+ *     → _CC1_PICK(_CC1_0 (yes), (no))       — 2 args, debraces (no)
+ *
+ * The _CC1_EXPAND layer is essential: ## suppresses argument prescan,
+ * so without it, macro-valued flags (e.g. H_NRF_SDH_OBSERVER_PRIO_HIGH_HIGH
+ * which is #defined as 1) would paste unexpanded and fail to match _CC1_1.
  */
 #ifndef COND_CODE_1
-#define _XXXX1 _YYYY,
-#define __DEBRACKET(...)                __VA_ARGS__
-#define __GET_ARG2_DEBRACKET(ign, val, ...)  __DEBRACKET val
-#define __COND_CODE(one_or_two, if1, el)     __GET_ARG2_DEBRACKET(one_or_two if1, el)
-#define Z_COND_CODE_1(flag, if1, el)         __COND_CODE(_XXXX##flag, if1, el)
-#define COND_CODE_1(flag, if1, el)           Z_COND_CODE_1(flag, if1, el)
+#define _CC1_1                              _CC1_MATCH,
+#define _CC1_PICK(_ign, val, ...)           _DEBRACKET val
+#define _CC1_TEST(tok, if1, el)             _CC1_PICK(tok if1, el)
+#define _CC1_EXPAND(flag, if1, el)          _CC1_TEST(_CC1_##flag, if1, el)
+#define COND_CODE_1(flag, if1, el)          _CC1_EXPAND(flag, if1, el)
 #endif
 
 /**
  * IS_EMPTY — expands to 1 when __VA_ARGS__ is empty, 0 otherwise.
  * Jens Gustedt technique.  Used by dis.c gatt_char() macro.
+ *
+ * Tests 4 conditions and pastes results into a 4-digit token.
+ * Only the combination "0001" means the argument is truly empty,
+ * and _IE_CASE_0001 produces a comma that _IE_HAS_COMMA detects.
+ *
+ * These layers are inherent to the technique and cannot be reduced.
  */
 #ifndef IS_EMPTY
-#define _IS_EMPTY_TRIGGER_PAREN_(...) ,
-#define _IS_EMPTY_ARG3(_0, _1, _2, ...) _2
-#define _IS_EMPTY_HAS_COMMA(...)        _IS_EMPTY_ARG3(__VA_ARGS__, 1, 0)
-#define _IS_EMPTY_PASTE5_(_0, _1, _2, _3, _4)  _0##_1##_2##_3##_4
-#define _IS_EMPTY_PASTE5(_0, _1, _2, _3, _4)   _IS_EMPTY_PASTE5_(_0, _1, _2, _3, _4)
-#define _IS_EMPTY_CASE_0001 ,
-#define _IS_EMPTY_EVAL(_0, _1, _2, _3)  \
-	_IS_EMPTY_HAS_COMMA(_IS_EMPTY_PASTE5(_IS_EMPTY_CASE_, _0, _1, _2, _3))
-#define IS_EMPTY(...)                                                                    \
-	_IS_EMPTY_EVAL(                                                                  \
-		_IS_EMPTY_HAS_COMMA(__VA_ARGS__),                                        \
-		_IS_EMPTY_HAS_COMMA(_IS_EMPTY_TRIGGER_PAREN_ __VA_ARGS__),              \
-		_IS_EMPTY_HAS_COMMA(__VA_ARGS__ (/*empty*/)),                            \
-		_IS_EMPTY_HAS_COMMA(_IS_EMPTY_TRIGGER_PAREN_ __VA_ARGS__ (/*empty*/)))
+#define _IE_TRIGGER(...)               ,
+#define _IE_ARG3(_0, _1, _2, ...)     _2
+#define _IE_HAS_COMMA(...)            _IE_ARG3(__VA_ARGS__, 1, 0)
+#define _IE_PASTE5_(a, b, c, d, e)    a##b##c##d##e
+#define _IE_PASTE5(a, b, c, d, e)     _IE_PASTE5_(a, b, c, d, e)
+#define _IE_CASE_0001                  ,
+#define _IE_EVAL(a, b, c, d) \
+	_IE_HAS_COMMA(_IE_PASTE5(_IE_CASE_, a, b, c, d))
+
+#define IS_EMPTY(...)                                              \
+	_IE_EVAL(                                                  \
+		_IE_HAS_COMMA(__VA_ARGS__),                        \
+		_IE_HAS_COMMA(_IE_TRIGGER __VA_ARGS__),            \
+		_IE_HAS_COMMA(__VA_ARGS__ (/*empty*/)),            \
+		_IE_HAS_COMMA(_IE_TRIGGER __VA_ARGS__ (/*empty*/)))
 #endif
 
 
@@ -617,19 +661,22 @@ static inline void sys_memcpy_swap(void *dst, const void *src, size_t length)
  * LISTIFY  —  replaces <zephyr/sys/util_macro.h> LISTIFY
  * LISTIFY(N, FN, sep, ...) → FN(0,...) sep FN(1,...) ... FN(N-1,...)
  * Supports up to 10 (sufficient for BLE link counts).
+ *
+ * Uses _DEBRACKET (shared with COND_CODE_1) to unwrap the separator.
+ * The recursive chain is inherent — each _LISTIFY_N must call N-1.
  * ====================================================================== */
 
 #define _LISTIFY_0(F, s, ...)
 #define _LISTIFY_1(F, s, ...)  F(0, ##__VA_ARGS__)
-#define _LISTIFY_2(F, s, ...)  _LISTIFY_1(F, s, ##__VA_ARGS__) __DEBRACKET s F(1, ##__VA_ARGS__)
-#define _LISTIFY_3(F, s, ...)  _LISTIFY_2(F, s, ##__VA_ARGS__) __DEBRACKET s F(2, ##__VA_ARGS__)
-#define _LISTIFY_4(F, s, ...)  _LISTIFY_3(F, s, ##__VA_ARGS__) __DEBRACKET s F(3, ##__VA_ARGS__)
-#define _LISTIFY_5(F, s, ...)  _LISTIFY_4(F, s, ##__VA_ARGS__) __DEBRACKET s F(4, ##__VA_ARGS__)
-#define _LISTIFY_6(F, s, ...)  _LISTIFY_5(F, s, ##__VA_ARGS__) __DEBRACKET s F(5, ##__VA_ARGS__)
-#define _LISTIFY_7(F, s, ...)  _LISTIFY_6(F, s, ##__VA_ARGS__) __DEBRACKET s F(6, ##__VA_ARGS__)
-#define _LISTIFY_8(F, s, ...)  _LISTIFY_7(F, s, ##__VA_ARGS__) __DEBRACKET s F(7, ##__VA_ARGS__)
-#define _LISTIFY_9(F, s, ...)  _LISTIFY_8(F, s, ##__VA_ARGS__) __DEBRACKET s F(8, ##__VA_ARGS__)
-#define _LISTIFY_10(F, s, ...) _LISTIFY_9(F, s, ##__VA_ARGS__) __DEBRACKET s F(9, ##__VA_ARGS__)
+#define _LISTIFY_2(F, s, ...)  _LISTIFY_1(F, s, ##__VA_ARGS__) _DEBRACKET s F(1, ##__VA_ARGS__)
+#define _LISTIFY_3(F, s, ...)  _LISTIFY_2(F, s, ##__VA_ARGS__) _DEBRACKET s F(2, ##__VA_ARGS__)
+#define _LISTIFY_4(F, s, ...)  _LISTIFY_3(F, s, ##__VA_ARGS__) _DEBRACKET s F(3, ##__VA_ARGS__)
+#define _LISTIFY_5(F, s, ...)  _LISTIFY_4(F, s, ##__VA_ARGS__) _DEBRACKET s F(4, ##__VA_ARGS__)
+#define _LISTIFY_6(F, s, ...)  _LISTIFY_5(F, s, ##__VA_ARGS__) _DEBRACKET s F(5, ##__VA_ARGS__)
+#define _LISTIFY_7(F, s, ...)  _LISTIFY_6(F, s, ##__VA_ARGS__) _DEBRACKET s F(6, ##__VA_ARGS__)
+#define _LISTIFY_8(F, s, ...)  _LISTIFY_7(F, s, ##__VA_ARGS__) _DEBRACKET s F(7, ##__VA_ARGS__)
+#define _LISTIFY_9(F, s, ...)  _LISTIFY_8(F, s, ##__VA_ARGS__) _DEBRACKET s F(8, ##__VA_ARGS__)
+#define _LISTIFY_10(F, s, ...) _LISTIFY_9(F, s, ##__VA_ARGS__) _DEBRACKET s F(9, ##__VA_ARGS__)
 
 #ifndef LISTIFY
 #define LISTIFY(n, F, s, ...) CONCAT(_LISTIFY_, n)(F, s, ##__VA_ARGS__)
@@ -641,15 +688,20 @@ static inline void sys_memcpy_swap(void *dst, const void *src, size_t length)
  *
  * GCC linker section-based pattern for statically registered objects.
  * Used by SoftDevice handler observer system.
+ *
+ * TYPE_SECTION_ITERABLE uses 2 layers because the inner macro uses #
+ * to stringify _secname and _prio.  Without the outer layer, macro
+ * arguments wouldn't expand before stringification.
  * ====================================================================== */
 
-#define TYPE_SECTION_ITERABLE(_type, _name, _secname, _prio) \
-	_BM_SECTION_ITERABLE_(_type, _name, _secname, _prio)
-
-#define _BM_SECTION_ITERABLE_(_type, _name, _secname, _prio) \
+#define _SECTION_ITEM(_type, _name, _secname, _prio) \
 	_type _name \
-	__attribute__((section(#_secname "." #_prio),            \
+	__attribute__((section(#_secname "." #_prio),    \
 	               used, aligned(__alignof__(_type))))
+
+/* Outer layer expands macro arguments before _SECTION_ITEM stringifies them */
+#define TYPE_SECTION_ITERABLE(_type, _name, _secname, _prio) \
+	_SECTION_ITEM(_type, _name, _secname, _prio)
 
 #define TYPE_SECTION_FOREACH(_type, _secname, _var)              \
 	extern _type __start_##_secname[];                           \

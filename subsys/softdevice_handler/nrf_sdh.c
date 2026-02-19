@@ -189,7 +189,7 @@ static int nrf_sdh_enable(void)
 	 * Only set SYSCOUNTEREN (bit 1). Do NOT set AUTOEN, do NOT touch
 	 * CLKCFG, do NOT call TASKS_STOP. The SD handles clock configuration
 	 * internally via the clock_lf_cfg passed to sd_softdevice_enable(). */
-	NRF_GRTC->MODE |= 2;		/* SYSCOUNTEREN */
+	NRF_GRTC->MODE |= 1;		/* SYSCOUNTEREN */
 	NRF_GRTC->TASKS_START = 1;
 
 	/* Sanitize NVIC state for SoftDevice. */

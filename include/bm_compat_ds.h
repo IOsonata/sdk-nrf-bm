@@ -4,9 +4,11 @@
 @brief	Zephyr kernel data structure replacements for sdk-nrf-bm
 
 Lightweight bare-metal implementations of:
-  - sys_slist  (intrusive singly-linked list)
   - k_mem_slab (fixed-size block allocator)
   - k_heap     (variable-size allocator over static buffer)
+  - ring_buf   (byte-level circular buffer)
+
+Note: sys_slist / sys_snode are defined in bm_compat.h (slist section).
 
 Designed for Cortex-M bare metal.  No RTOS dependencies.
 
@@ -30,11 +32,6 @@ extern "C" {
 
 
 /* ======================================================================
- * Note: sys_slist / sys_snode are defined in bm_compat.h (slist section).
- * ====================================================================== */
-
-
-/* ======================================================================
  * Section: Memory slab  —  replaces <zephyr/kernel.h> k_mem_slab
  *
  * Fixed-size block allocator.  Free list threaded through the blocks
@@ -54,40 +51,37 @@ struct k_mem_slab {
 	uint32_t   num_used;     /**< Currently allocated blocks.       */
 };
 
+/** Round block size up to pointer alignment. */
+#define _SLAB_BLOCK_SIZE(bsize) \
+	(((bsize) + sizeof(void *) - 1) & ~(sizeof(void *) - 1))
+
 /**
- * @brief Define and statically initialize a memory slab.
+ * @brief Internal: define a memory slab with given storage class prefix.
  *
+ * @param _sc          Storage class tokens (e.g. "static" or empty).
  * @param name         Symbol name.
- * @param bsize        Block size in bytes (will be rounded up to pointer alignment).
+ * @param bsize        Block size in bytes (rounded up to pointer alignment).
  * @param nblocks      Number of blocks.
  * @param balign       Minimum alignment (unused; pointer-aligned).
  */
-#define K_MEM_SLAB_DEFINE_STATIC(name, bsize, nblocks, balign)                  \
-	static uint8_t __aligned(sizeof(void *))                                \
-		_slab_buf_##name[(nblocks) *                                    \
-		(((bsize) + sizeof(void *) - 1) & ~(sizeof(void *) - 1))];     \
-	static struct k_mem_slab name = {                                       \
-		.free_list  = NULL,                                             \
-		.buffer     = _slab_buf_##name,                                 \
-		.block_size = ((bsize) + sizeof(void *) - 1)                    \
-		              & ~(sizeof(void *) - 1),                          \
-		.num_blocks = (nblocks),                                        \
-		.num_used   = 0,                                                \
+#define _K_MEM_SLAB_DEFINE(_sc, name, bsize, nblocks, balign)        \
+	_sc uint8_t __aligned(sizeof(void *))                        \
+		_slab_buf_##name[(nblocks) * _SLAB_BLOCK_SIZE(bsize)]; \
+	_sc struct k_mem_slab name = {                               \
+		.free_list  = NULL,                                  \
+		.buffer     = _slab_buf_##name,                      \
+		.block_size = _SLAB_BLOCK_SIZE(bsize),               \
+		.num_blocks = (nblocks),                             \
+		.num_used   = 0,                                     \
 	}
 
-/* Non-static variant — caller provides storage class */
-#define K_MEM_SLAB_DEFINE(name, bsize, nblocks, balign)                         \
-	uint8_t __aligned(sizeof(void *))                                       \
-		_slab_buf_##name[(nblocks) *                                    \
-		(((bsize) + sizeof(void *) - 1) & ~(sizeof(void *) - 1))];     \
-	struct k_mem_slab name = {                                              \
-		.free_list  = NULL,                                             \
-		.buffer     = _slab_buf_##name,                                 \
-		.block_size = ((bsize) + sizeof(void *) - 1)                    \
-		              & ~(sizeof(void *) - 1),                          \
-		.num_blocks = (nblocks),                                        \
-		.num_used   = 0,                                                \
-	}
+/** Static slab definition. */
+#define K_MEM_SLAB_DEFINE_STATIC(name, bsize, nblocks, balign) \
+	_K_MEM_SLAB_DEFINE(static, name, bsize, nblocks, balign)
+
+/** Non-static slab definition — caller provides storage class. */
+#define K_MEM_SLAB_DEFINE(name, bsize, nblocks, balign) \
+	_K_MEM_SLAB_DEFINE(/*non-static*/, name, bsize, nblocks, balign)
 
 /**
  * @brief Initialize a memory slab at runtime (builds free list).
@@ -155,7 +149,7 @@ static inline void k_mem_slab_free(struct k_mem_slab *slab, void *mem)
  * chained through an embedded next pointer + size.  Adjacent free
  * blocks are coalesced on free.
  *
- * Designed for small allocations (BLE GATT payloads ≤ 247 bytes).
+ * Designed for small allocations (BLE GATT payloads <= 247 bytes).
  * ====================================================================== */
 
 /** @brief Free block header, embedded in free space. */
