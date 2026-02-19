@@ -10,7 +10,6 @@
 
 #include <nrf_soc.h>
 
-#include "bm/softdevice_handler/nrf_sdh.h"
 #include "bm/softdevice_handler/nrf_sdh_soc.h"
 
 /*
@@ -31,19 +30,16 @@ void sdh_soc_rand_seed(uint32_t evt, void *ctx)
 
 	(void)ctx;
 
-	if (evt != NRF_EVT_RAND_SEED_REQUEST) {
-		return;
+	if (evt == NRF_EVT_RAND_SEED_REQUEST)
+	{
+		if (nrfx_cracen_entropy_get(seed, sizeof(seed)) != 0)
+		{
+			return;
+		}
+
+		nrf_err = sd_rand_seed_set(seed);
+		(void)nrf_err;
 	}
-
-	if (nrfx_cracen_entropy_get(seed, sizeof(seed)) != 0) {
-		return;
-	}
-
-	nrf_err = sd_rand_seed_set(seed);
-	(void)nrf_err;
-
-	/* Discard seed immediately */
-	memset(seed, 0, sizeof(seed));
 }
 
 /* Auto-handle seed requests as a SoC event observer */

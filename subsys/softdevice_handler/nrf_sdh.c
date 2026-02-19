@@ -213,7 +213,7 @@ static int nrf_sdh_enable(void)
 			}
 		}
 	}
-msDelay(1);
+msDelay(10);
 
 	printf("GRTC: MODE=0x%x\r\n", NRF_GRTC->MODE);
 
@@ -228,8 +228,8 @@ msDelay(1);
 	 * because the SD validates interrupt config during enable. */
 	sd_irq_post_enable();
 
-	sdh_is_suspended = false;
-	sdh_transition = false;
+	atomic_set(&sdh_is_suspended, false);
+	atomic_set(&sdh_transition, false);
 
 	/* The SoftDevice requires RNG seeding after enable, before sd_ble_enable().
 	 * Without this, sd_ble_enable() returns 0x8 (NRF_ERROR_INVALID_STATE).
