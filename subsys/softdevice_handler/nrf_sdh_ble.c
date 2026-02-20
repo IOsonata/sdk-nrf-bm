@@ -10,9 +10,12 @@
 #include <ble.h>
 #include <bm/softdevice_handler/nrf_sdh.h>
 #include <bm/softdevice_handler/nrf_sdh_ble.h>
-#include "bm_compat.h"
+#include <zephyr/logging/log.h>
 
-#define DEBUG_PRINTF	printf
+//#define APP_RAM_START DT_REG_ADDR(DT_CHOSEN(zephyr_sram))
+
+LOG_MODULE_DECLARE(nrf_sdh, CONFIG_NRF_SDH_LOG_LEVEL);
+
 /*
  * APP_RAM_START — base of application SRAM after SoftDevice reservation.
  *
@@ -26,7 +29,6 @@
 #define CONFIG_APP_RAM_START  0x20004780UL
 #endif
 #define APP_RAM_START  CONFIG_APP_RAM_START
-
 
 #define PERIPHERAL_LINKS                                                                           \
 	COND_CODE_1(CONFIG_NRF_SDH_BLE_PERIPHERAL_LINK_COUNT,                                      \
@@ -179,7 +181,7 @@ static int default_cfg_set(void)
 
 	err = sd_ble_cfg_set(BLE_CONN_CFG_GAP, &ble_cfg, app_ram_start);
 	if (err) {
-		printf("BLE_CONN_CFG_GAP failed: 0x%x\r\n", err);
+		LOG_WRN("Failed to set BLE_CONN_CFG_GAP, nrf_error %#x", err);
 	}
 
 	/* Configure the connection roles. */
@@ -200,10 +202,7 @@ static int default_cfg_set(void)
 
 	err = sd_ble_cfg_set(BLE_GAP_CFG_ROLE_COUNT, &ble_cfg, app_ram_start);
 	if (err) {
-		DEBUG_PRINTF("BLE_GAP_CFG_ROLE_COUNT failed: 0x%x (periph=%d central=%d)\r\n",
-			err,
-			ble_cfg.gap_cfg.role_count_cfg.periph_role_count,
-			ble_cfg.gap_cfg.role_count_cfg.central_role_count);
+		LOG_WRN("Failed to set BLE_GAP_CFG_ROLE_COUNT, nrf_error %#x", err);
 	}
 
 	/* Configure the maximum ATT MTU. */
@@ -214,7 +213,7 @@ static int default_cfg_set(void)
 
 	err = sd_ble_cfg_set(BLE_CONN_CFG_GATT, &ble_cfg, app_ram_start);
 	if (err) {
-		DEBUG_PRINTF("BLE_CONN_CFG_GATT failed: 0x%x\r\n", err);
+		LOG_WRN("Failed to set BLE_CONN_CFG_GATT, nrf_error %#x", err);
 	}
 #endif /* NRF_SDH_BLE_GATT_MAX_MTU_SIZE != 23 */
 
@@ -224,7 +223,7 @@ static int default_cfg_set(void)
 
 	err = sd_ble_cfg_set(BLE_COMMON_CFG_VS_UUID, &ble_cfg, app_ram_start);
 	if (err) {
-		DEBUG_PRINTF("BLE_COMMON_CFG_VS_UUID failed: 0x%x\r\n", err);
+		LOG_WRN("Failed to set BLE_COMMON_CFG_VS_UUID, nrf_error %#x", err);
 	}
 
 	/* Configure the GATTS attribute table. */
@@ -233,7 +232,7 @@ static int default_cfg_set(void)
 
 	err = sd_ble_cfg_set(BLE_GATTS_CFG_ATTR_TAB_SIZE, &ble_cfg, app_ram_start);
 	if (err) {
-		DEBUG_PRINTF("BLE_GATTS_CFG_ATTR_TAB_SIZE failed: 0x%x\r\n", err);
+		LOG_WRN("Failed to set BLE_GATTS_CFG_ATTR_TAB_SIZE, nrf_error %#x", err);
 	}
 
 	/* Configure Service Changed characteristic. */
@@ -243,10 +242,10 @@ static int default_cfg_set(void)
 
 	err = sd_ble_cfg_set(BLE_GATTS_CFG_SERVICE_CHANGED, &ble_cfg, app_ram_start);
 	if (err) {
-		DEBUG_PRINTF("BLE_GATTS_CFG_SERVICE_CHANGED failed: 0x%x\r\n", err);
+		LOG_WRN("Failed to set BLE_GATTS_CFG_SERVICE_CHANGED, nrf_error %#x", err);
 	}
 
-	DEBUG_PRINTF("SoftDevice configuration applied\r\n");
+	LOG_DBG("SoftDevice configuration applied");
 
 	return 0;
 }
@@ -259,34 +258,18 @@ int nrf_sdh_ble_enable(uint8_t conn_cfg_tag)
 
 	default_cfg_set();
 
-	DEBUG_PRINTF("BLE cfg: RAM=0x%x links=%d periph=%d central=%d MTU=%d VS_UUID=%d ATTR_TAB=%d\r\n",
-		app_ram_start_link,
-		CONFIG_NRF_SDH_BLE_TOTAL_LINK_COUNT,
-		CONFIG_NRF_SDH_BLE_PERIPHERAL_LINK_COUNT,
-		CONFIG_NRF_SDH_BLE_CENTRAL_LINK_COUNT,
-		CONFIG_NRF_SDH_BLE_GATT_MAX_MTU_SIZE,
-		CONFIG_NRF_SDH_BLE_VS_UUID_COUNT,
-		CONFIG_NRF_SDH_BLE_GATTS_ATTR_TAB_SIZE);
+	LOG_DBG("Application RAM starts at 0x%x", app_ram_start_link);
 
 	err = sd_ble_enable(&app_ram_minimum);
 	if (app_ram_minimum > app_ram_start_link) {
-		/* SD needs more dynamic RAM than the linker script reserved.
-		 * Update CONFIG_APP_RAM_START and linker script RAM ORIGIN
-		 * to match app_ram_minimum for a clean build.
-		 */
-		DEBUG_PRINTF("SD BLE needs app RAM at 0x%x (linker has 0x%x)\r\n",
-			app_ram_minimum, app_ram_start_link);
-
-		if (err == NRF_ERROR_INVALID_LENGTH) {
-			/* Retry with the SD-reported minimum — wastes the gap
-			 * but lets the stack come up for development. */
-			err = sd_ble_enable(&app_ram_minimum);
-		}
+		LOG_ERR("Insufficient RAM allocated for the SoftDevice (have %#x, need %#x)",
+			app_ram_start_link, app_ram_minimum);
+	} else if (app_ram_minimum != app_ram_start_link) {
+		LOG_DBG("Application RAM start location can be adjusted to %#x", app_ram_minimum);
 	}
 
 	if (err) {
-		DEBUG_PRINTF("sd_ble_enable failed: err 0x%x, need RAM 0x%x\r\n",
-			err, app_ram_minimum);
+		LOG_ERR("Failed to enable BLE, nrf_error %#x", err);
 		return err;
 	}
 

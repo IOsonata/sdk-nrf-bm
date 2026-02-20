@@ -24,13 +24,19 @@
 #include <bm/softdevice_handler/nrf_sdh.h>
 #include <bm/softdevice_handler/nrf_sdh_ble.h>
 
-#include "bm_compat.h"
+#include <zephyr/kernel.h>
+#include <zephyr/irq.h>
+#include <zephyr/sys/ring_buffer.h>
+#include <zephyr/toolchain.h>
+#include <zephyr/logging/log.h>
+#include <zephyr/logging/log_ctrl.h>
 #include <board-config.h>
 
 /* FIFO for keeping track of peers that cannot be deleted immediately. */
 RING_BUF_DECLARE(peers_to_delete_on_disconnect,
-		 CONFIG_APP_BLE_BMS_PEERS_TO_DELETE_ON_DISCONNECT_MAX * sizeof(uint16_t));
+		 CONFIG_SAMPLE_BLE_BMS_PEERS_TO_DELETE_ON_DISCONNECT_MAX * sizeof(uint16_t));
 
+LOG_MODULE_REGISTER(sample, CONFIG_SAMPLE_BLE_BMS_LOG_LEVEL);
 
 /* Perform bonding. */
 #define SEC_PARAM_BOND 1
@@ -64,7 +70,7 @@ static uint16_t peer_id;
 static bool auth_key_request;
 
 /* Write buffer for the Queued Write module. */
-static uint8_t qwr_mem[CONFIG_APP_QWR_MEM_BUFF_SIZE];
+static uint8_t qwr_mem[CONFIG_SAMPLE_QWR_MEM_BUFF_SIZE];
 
 /* Forward declaration */
 static void identities_set(enum pm_peer_id_list_skip skip);

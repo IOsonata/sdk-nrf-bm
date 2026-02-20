@@ -8,9 +8,14 @@
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
-#include "bm_compat.h"
+#include <zephyr/kernel.h>
+#include <zephyr/sys/crc.h>
+#include <zephyr/sys/atomic.h>
+#include <zephyr/sys/crc.h>
+#include <zephyr/ztest.h>
 
 #if defined(CONFIG_BOARD_NATIVE_SIM)
+#include <zephyr/kernel.h>
 #endif
 
 #include <bm/fs/bm_zms.h>

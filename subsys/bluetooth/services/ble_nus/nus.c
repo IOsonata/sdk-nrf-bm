@@ -11,8 +11,9 @@
 #include <bm/bluetooth/services/common.h>
 #include <bm/bluetooth/services/uuid.h>
 
-#include "bm_compat.h"
+#include <zephyr/logging/log.h>
 
+LOG_MODULE_REGISTER(ble_nus, CONFIG_BLE_NUS_LOG_LEVEL);
 
 static struct ble_nus_client_context *ble_nus_client_context_get(struct ble_nus *nus,
 								 uint16_t conn_handle)

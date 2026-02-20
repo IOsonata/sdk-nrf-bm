@@ -12,13 +12,15 @@
 #include <bm/bluetooth/services/uuid.h>
 #include <bm/bluetooth/ble_qwr.h>
 
-#include "bm_compat.h"
+#include <zephyr/sys/byteorder.h>
+#include <zephyr/logging/log.h>
 
 /** Length of the Feature Characteristic (in bytes). */
 #define BLE_BMS_FEATURE_LEN 3
 /** Minimum length of the Bond Management Control Point Characteristic (in bytes). */
 #define BLE_BMS_CTRLPT_MIN_LEN 1
 
+LOG_MODULE_REGISTER(ble_bms, CONFIG_BLE_BMS_LOG_LEVEL);
 
 static uint32_t ctrlpt_char_add(struct ble_bms *bms, const struct ble_bms_config *bms_config)
 {

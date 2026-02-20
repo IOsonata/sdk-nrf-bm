@@ -17,7 +17,7 @@
 
 #include <stdint.h>
 #include <bm/softdevice_handler/nrf_sdh.h>
-#include "bm_compat.h"
+#include <zephyr/sys/iterable_sections.h>
 
 #ifdef __cplusplus
 extern "C" {

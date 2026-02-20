@@ -4,7 +4,9 @@
  * SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
  */
 
-#include "bm_compat.h"
+#include <zephyr/kernel.h>
+#include <zephyr/logging/log.h>
+#include <zephyr/logging/log_ctrl.h>
 
 #define STORAGE_NODE DT_NODELABEL(storage0_partition)
 #define BM_ZMS_PARTITION_OFFSET DT_REG_ADDR(STORAGE_NODE)
@@ -26,6 +28,7 @@ static volatile bool write_notif;
 static volatile bool mount_notif;
 static volatile bool clear_notif;
 
+LOG_MODULE_REGISTER(sample, CONFIG_SAMPLE_BM_ZMS_LOG_LEVEL);
 
 void bm_zms_sample_handler(const struct bm_zms_evt *evt)
 {
@@ -161,8 +164,8 @@ int main(void)
 
 	struct bm_zms_fs_config config = {
 		.offset = BM_ZMS_PARTITION_OFFSET,
-		.sector_size = CONFIG_APP_BM_ZMS_SECTOR_SIZE,
-		.sector_count = (BM_ZMS_PARTITION_SIZE / CONFIG_APP_BM_ZMS_SECTOR_SIZE),
+		.sector_size = CONFIG_SAMPLE_BM_ZMS_SECTOR_SIZE,
+		.sector_count = (BM_ZMS_PARTITION_SIZE / CONFIG_SAMPLE_BM_ZMS_SECTOR_SIZE),
 		.evt_handler = bm_zms_sample_handler
 	};
 
@@ -181,7 +184,7 @@ int main(void)
 	}
 	wait_for_clear();
 
-	for (i = 0; i < CONFIG_APP_BM_ZMS_ITERATIONS_MAX; i++) {
+	for (i = 0; i < CONFIG_SAMPLE_BM_ZMS_ITERATIONS_MAX; i++) {
 		rc = bm_zms_mount(&fs, &config);
 		if (rc) {
 			LOG_ERR("Storage Init failed, rc=%d", rc);
@@ -266,7 +269,7 @@ int main(void)
 		wait_for_write();
 
 		/* Each DELETE_ITERATION delete all basic items */
-		if (!(i % CONFIG_APP_BM_ZMS_ITERATIONS_DELETE_INTERVAL) && (i)) {
+		if (!(i % CONFIG_SAMPLE_BM_ZMS_ITERATIONS_DELETE_INTERVAL) && (i)) {
 			rc = delete_basic_items(&fs);
 			if (rc) {
 				goto idle;
@@ -274,7 +277,7 @@ int main(void)
 		}
 	}
 
-	if (i != CONFIG_APP_BM_ZMS_ITERATIONS_MAX) {
+	if (i != CONFIG_SAMPLE_BM_ZMS_ITERATIONS_MAX) {
 		LOG_ERR("Error: Something went wrong at iteration %u rc=%d", i, rc);
 		goto idle;
 	}

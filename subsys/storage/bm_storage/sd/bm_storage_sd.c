@@ -12,7 +12,9 @@
 #include <bm/softdevice_handler/nrf_sdh.h>
 #include <bm/storage/bm_storage.h>
 #include <bm/storage/bm_storage_backend.h>
-#include "bm_compat.h"
+#include <zephyr/irq.h>
+#include <zephyr/sys/atomic.h>
+#include <zephyr/sys/ring_buffer.h>
 
 /* 128-bit word line. This is the optimal size to fully utilize RRAM 128-bit word line with ECC
  * (error correction code) and minimize ECC updates overhead, due to these updates happening

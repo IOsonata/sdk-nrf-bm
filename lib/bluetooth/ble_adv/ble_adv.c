@@ -7,8 +7,10 @@
 #include <bm/bluetooth/ble_adv.h>
 #include <bm/bluetooth/ble_adv_data.h>
 #include <bm/softdevice_handler/nrf_sdh_ble.h>
-#include "bm_compat.h"
+#include <zephyr/logging/log.h>
+#include <zephyr/toolchain.h>
 
+LOG_MODULE_REGISTER(ble_adv, CONFIG_BLE_ADV_LOG_LEVEL);
 
 /* Total number of possible advertising modes  */
 #define BLE_ADV_MODES (5)

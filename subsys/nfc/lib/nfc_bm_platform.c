@@ -4,13 +4,14 @@
  * SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
  */
 
-#include "bm_compat.h"
+#include <zephyr/kernel.h>  /* IS_ENABLED, ISR_DIRECT_DECLARE, IRQ_DIRECT_CONNECT */
 
 #if defined(CONFIG_SOFTDEVICE)
 #include <nrf_soc.h>
 #include <bm/softdevice_handler/nrf_sdh_soc.h>
 #endif
 
+#include <zephyr/sys/__assert.h>
 
 #include <nrfx_nfct.h>
 #include <nrfx_timer.h>
@@ -20,7 +21,9 @@
 
 #include "platform_internal.h"
 
+#include <zephyr/logging/log.h>
 
+LOG_MODULE_REGISTER(nfc_platform, CONFIG_BM_NFC_PLATFORM_LOG_LEVEL);
 
 #if NRF54L_ERRATA_60_ENABLE_WORKAROUND
 #define NFC_PLATFORM_USE_TIMER_WORKAROUND 1

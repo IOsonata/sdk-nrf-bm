@@ -17,9 +17,16 @@
 #include <bm/bluetooth/ble_conn_params.h>
 #include <bm/bluetooth/services/ble_mcumgr.h>
 
-#include "bm_compat.h"
+#include <zephyr/kernel.h>
+#include <zephyr/mgmt/mcumgr/mgmt/callbacks.h>
+#include <zephyr/sys/reboot.h>
+#include <zephyr/logging/log.h>
+#include <zephyr/logging/log_ctrl.h>
+#include <zephyr/settings/settings.h>
 #include <bm/settings/bluetooth_name.h>
+#include <zephyr/retention/retention.h>
 
+LOG_MODULE_REGISTER(app, CONFIG_APP_LOG_LEVEL);
 
 BLE_ADV_DEF(ble_adv); /* BLE advertising instance */
 

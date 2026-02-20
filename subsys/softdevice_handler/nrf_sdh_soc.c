@@ -10,8 +10,9 @@
 #include <nrf_soc.h>
 #include <bm/softdevice_handler/nrf_sdh.h>
 #include <bm/softdevice_handler/nrf_sdh_soc.h>
-#include "bm_compat.h"
+#include <zephyr/logging/log.h>
 
+LOG_MODULE_DECLARE(nrf_sdh, CONFIG_NRF_SDH_LOG_LEVEL);
 
 const char *nrf_sdh_soc_evt_to_str(uint32_t evt)
 {

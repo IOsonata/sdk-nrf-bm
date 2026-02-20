@@ -3,7 +3,7 @@
  *
  * SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
  */
-#include "bm_compat.h"
+#include <zephyr/kernel.h>
 #include <nfc_platform.h>
 #include "platform_internal.h"
 

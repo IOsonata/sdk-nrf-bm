@@ -5,8 +5,12 @@
  */
 
 #include <stdint.h>
-#include "bm_compat.h"
+#include <zephyr/kernel.h>
+#include <zephyr/sys/reboot.h>
+#include <zephyr/retention/bootmode.h>
+#include <zephyr/logging/log.h>
 
+LOG_MODULE_REGISTER(test, CONFIG_TEST_LOG_LEVEL);
 
 int main(void)
 {

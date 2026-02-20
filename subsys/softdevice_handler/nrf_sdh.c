@@ -4,32 +4,28 @@
  * SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
  */
 #include <stdint.h>
-#include <stdatomic.h>
-#include <stdio.h>
+#include <nrf_sdm.h>
+#include <nrf_soc.h>
+#include <bm/softdevice_handler/nrf_sdh.h>
+#include <bm/bm_scheduler.h>
+#include <zephyr/toolchain.h>
+#include <zephyr/logging/log.h>
+#include <zephyr/sys/atomic.h>
+#include <zephyr/sys/iterable_sections.h>
 
-#include "nrf.h"
-#include "nrf_sdm.h"
-#include "nrf_soc.h"
-#include "bm/softdevice_handler/nrf_sdh.h"
-#include "bm/bm_scheduler.h"
-#include "bm_compat.h"
-/* nrf_sdh_config.h removed — all CONFIG_NRF_SDH_* values are provided
- * by bm_config_defaults.h, which bm_compat.h includes automatically. */
 #include "coredev/system_core_clock.h"
-#include "irq_connect.h"
-
 #include "idelay.h"
+
+LOG_MODULE_REGISTER(nrf_sdh, CONFIG_NRF_SDH_LOG_LEVEL);
+
 
 extern McuOsc_t g_McuOsc;
 
-/* Forward declaration — defined below, needed by nrf_sdh_enable() */
-static int sd_direct_isr(void);
-
-
-/* Clock source is determined at runtime from g_McuOsc.LowPwrOsc.Type,
- * so compile-time BUILD_ASSERTs for LFXO/RC are not applicable.
- * The rc_ctiv and rc_temp_ctiv values are set dynamically in nrf_sdh_enable().
- */
+#if 0
+#if defined(CONFIG_NRF_SDH_CLOCK_LF_SRC_XO)
+BUILD_ASSERT(CONFIG_NRF_SDH_CLOCK_LF_RC_CTIV == 0, "rc_ctiv must be 0 when using LFXO");
+BUILD_ASSERT(CONFIG_NRF_SDH_CLOCK_LF_RC_TEMP_CTIV == 0, "rc_temp_ctiv must be 0 when usings LFXO");
+#endif /* CONFIG_NRF_SDH_CLOCK_LF_SRC_XO */
 
 #if defined(CONFIG_NRF_GRTC_TIMER)
 BUILD_ASSERT(IS_ENABLED(CONFIG_NRF_GRTC_START_SYSCOUNTER),
@@ -39,6 +35,7 @@ BUILD_ASSERT(IS_ENABLED(CONFIG_NRF_GRTC_TIMER_SOURCE_LFXO) ||
 	     "The selected GRTC timer source is invalid when using SoftDevice. "
 	     "Please select either LFXO (if external LF oscillator) or LFLPRC (internal RC)");
 #endif /* CONFIG_NRF_GRTC_TIMER */
+#endif
 
 static atomic_t sdh_is_suspended;	/* Whether the SoftDevice event interrupts are disabled. */
 static atomic_t sdh_transition;		/* Whether enable/disable process was started. */
@@ -74,6 +71,12 @@ bool sdh_state_evt_observer_notify(enum nrf_sdh_state_evt state)
 	bool all_ready;
 	bool busy_is_allowed;
 
+	if (IS_ENABLED(CONFIG_NRF_SDH_STR_TABLES)) {
+		LOG_DBG("State change: %s", state_to_str(state));
+	} else {
+		LOG_DBG("State change: %#x", state);
+	}
+
 	all_ready = true;
 	busy_is_allowed = (state == NRF_SDH_STATE_EVT_ENABLE_PREPARE) ||
 			  (state == NRF_SDH_STATE_EVT_DISABLE_PREPARE);
@@ -84,18 +87,24 @@ bool sdh_state_evt_observer_notify(enum nrf_sdh_state_evt state)
 		 */
 		if (busy_is_allowed && obs->is_busy) {
 			obs->is_busy = !!obs->handler(state, obs->context);
+			if (obs->is_busy) {
+				LOG_DBG("SoftDevice observer %p is busy", obs);
+			}
 			all_ready &= !obs->is_busy;
 		} else {
 			busy = obs->handler(state, obs->context);
+			(void) busy;
+			__ASSERT(!busy, "Returning non-zero from these events is ignored");
 		}
 	}
 
 	return !all_ready;
 }
 
-__attribute__((weak)) void softdevice_fault_handler(uint32_t id, uint32_t pc, uint32_t info)
+__weak void softdevice_fault_handler(uint32_t id, uint32_t pc, uint32_t info)
 {
-#if 0
+	LOG_ERR("SoftDevice fault! ID %#x, PC %#x, Info %#x", id, pc, info);
+
 	switch (id) {
 	case NRF_FAULT_ID_SD_ASSERT:
 		LOG_ERR("NRF_FAULT_ID_SD_ASSERT: SoftDevice assert");
@@ -109,11 +118,9 @@ __attribute__((weak)) void softdevice_fault_handler(uint32_t id, uint32_t pc, ui
 		}
 		break;
 	}
-#endif
 
 	for (;;) {
 		/* loop */
-		__WFE();
 	}
 }
 
@@ -172,78 +179,39 @@ uint8_t nrf_get_lfclk_accuracy(uint32_t ppm)
 static int nrf_sdh_enable(void)
 {
 	int err;
-	const bool is_xo = (g_McuOsc.LowPwrOsc.Type != 0);  /* 0 = RC, 1 = LFXO */
+
 	const nrf_clock_lf_cfg_t clock_lf_cfg = {
 		.source = g_McuOsc.LowPwrOsc.Type, //CONFIG_NRF_SDH_CLOCK_LF_SRC,
-		.rc_ctiv = is_xo ? 0 : CONFIG_NRF_SDH_CLOCK_LF_RC_CTIV,
-		.rc_temp_ctiv = is_xo ? 0 : CONFIG_NRF_SDH_CLOCK_LF_RC_TEMP_CTIV,
+		.rc_ctiv = g_McuOsc.LowPwrOsc.Type != 0 ? 0 : CONFIG_NRF_SDH_CLOCK_LF_RC_CTIV,
+		.rc_temp_ctiv = g_McuOsc.LowPwrOsc.Type != 0 ? 0 : CONFIG_NRF_SDH_CLOCK_LF_RC_TEMP_CTIV,
 		.accuracy = nrf_get_lfclk_accuracy(g_McuOsc.LowPwrOsc.Accuracy), //CONFIG_NRF_SDH_CLOCK_LF_ACCURACY,
 		.hfclk_latency = CONFIG_NRF_SDH_CLOCK_HFCLK_LATENCY,
 		.hfint_ctiv = CONFIG_NRF_SDH_CLOCK_HFINT_CALIBRATION_INTERVAL,
 	};
 
-	/* S145 requires GRTC SYSCOUNTER running before sd_softdevice_enable.
-	 * Match the proven IOsonata SDC/MPSL init sequence (nrf_mpsl.cpp:96-97):
-	 *   NRF_GRTC->MODE |= 2;
-	 *   NRF_GRTC->TASKS_START = 1;
-	 * Only set SYSCOUNTEREN (bit 1). Do NOT set AUTOEN, do NOT touch
-	 * CLKCFG, do NOT call TASKS_STOP. The SD handles clock configuration
-	 * internally via the clock_lf_cfg passed to sd_softdevice_enable(). */
-	NRF_GRTC->MODE |= 3;		/* SYSCOUNTEREN */
-	NRF_GRTC->TASKS_START = 1;
-
-	/* Sanitize NVIC state for SoftDevice. */
-	{
-		static const IRQn_Type sd_irqs[] = {
-			RADIO_0_IRQn, TIMER10_IRQn, GRTC_3_IRQn,
-			AAR00_CCM00_IRQn, ECB00_IRQn, CLOCK_POWER_IRQn,
-			SWI00_IRQn, SWI01_IRQn, SWI02_IRQn
-		};
-		for (unsigned i = 0; i < sizeof(sd_irqs)/sizeof(sd_irqs[0]); i++) {
-			NVIC_DisableIRQ(sd_irqs[i]);
-			NVIC_ClearPendingIRQ(sd_irqs[i]);
-			NVIC_SetPriority(sd_irqs[i], 4);
-		}
-		for (int irqn = 0; irqn < 240; irqn++) {
-			if (NVIC_GetEnableIRQ((IRQn_Type)irqn)) {
-				uint32_t prio = NVIC_GetPriority((IRQn_Type)irqn);
-				if (prio < 2) {
-					NVIC_SetPriority((IRQn_Type)irqn, 2);
-				}
-			}
-		}
-	}
-msDelay(100);
-
-	printf("GRTC: MODE=0x%x\r\n", NRF_GRTC->MODE);
-
 	err = sd_softdevice_enable(&clock_lf_cfg, softdevice_fault_handler);
 	if (err) {
-		printf("sd_softdevice_enable failed: SD err 0x%x\r\n", err);
+		LOG_ERR("Failed to enable SoftDevice, nrf_error %#x", err);
 		return -EINVAL;
 	}
-
-	/* Phase 2: now that the SD is running, connect its peripheral IRQs
-	 * and enable the forwarding path.  Must be after sd_softdevice_enable
-	 * because the SD validates interrupt config during enable. */
-	//sd_irq_post_enable();
 
 	atomic_set(&sdh_is_suspended, false);
 	atomic_set(&sdh_transition, false);
 
-	/* The SoftDevice requires RNG seeding after enable, before sd_ble_enable().
-	 * Without this, sd_ble_enable() returns 0x8 (NRF_ERROR_INVALID_STATE).
-	 * In Zephyr this was gated behind DISPATCH_MODEL_SCHED, but in bare-metal
-	 * we must always do it synchronously here. */
-	{
-		extern void sdh_soc_rand_seed(uint32_t evt, void *ctx);
-		(void) sdh_soc_rand_seed(NRF_EVT_RAND_SEED_REQUEST, NULL);
-	}
+#if defined(CONFIG_NRF_SDH_DISPATCH_MODEL_SCHED)
+	/* Upon enabling the SoftDevice events IRQ, the SoftDevice will request a rand seed.
+	 * When the events are dispatched by the scheduler, it won't be possible to
+	 * enable Bluetooth until that event has been processed (in the main() loop).
+	 * To avoid this, we seed the SoftDevice before enabling the interrupt so
+	 * that no event is generated, and the application can complete the BLE
+	 * initialization before reaching the main() loop.
+	 */
+	BUILD_ASSERT(IS_ENABLED(CONFIG_NRF_SDH_SOC_RAND_SEED));
+	extern void sdh_soc_rand_seed(uint32_t evt, void *ctx);
+	(void) sdh_soc_rand_seed(NRF_EVT_RAND_SEED_REQUEST, NULL);
+#endif /* CONFIG_NRF_SDH_DISPATCH_MODEL_SCHED */
 
-	/* Enable event interrupt.
-	 * SYS_INIT is stripped in bare-metal, so wire the SD event IRQ here
-	 * (was originally done by SYS_INIT(sd_irq_init) at boot). */
-	//IRQ_DIRECT_CONNECT(SD_EVT_IRQn, 4, sd_direct_isr, 0);
+	/* Enable event interrupt, the priority has already been set by the stack. */
 	NVIC_EnableIRQ((IRQn_Type)SD_EVT_IRQn);
 
 	(void)sdh_state_evt_observer_notify(NRF_SDH_STATE_EVT_ENABLED);
@@ -273,6 +241,7 @@ static int nrf_sdh_disable(void)
 int nrf_sdh_enable_request(void)
 {
 	bool busy;
+	uint8_t enabled;
 
 	/* Handle warm reset (debugger, watchdog): SRAM is retained and
 	 * the SD's "enabled" flag from the previous session survives.
@@ -285,6 +254,10 @@ int nrf_sdh_enable_request(void)
 	 *   Dynamic: 0x20001780 - 0x2000477F  (12K)
 	 */
 	memset((void *)0x20000000, 0, 0x4780);
+	(void)sd_softdevice_is_enabled(&enabled);
+	if (enabled) {
+		return -EALREADY;
+	}
 
 	if (sdh_transition) {
 		return -EINPROGRESS;
@@ -471,6 +444,12 @@ ISR_DIRECT_DECLARE(sd_direct_isr)
 	return 0;
 }
 
-/* sd_irq_init() functionality (SD_EVT_IRQn wiring) is now inlined
- * in nrf_sdh_enable() above.  The original SYS_INIT(sd_irq_init, ...)
- * was stripped by bm_compat.h; inlining avoids the silent no-op. */
+static int sd_irq_init(void)
+{
+	IRQ_DIRECT_CONNECT(SD_EVT_IRQn, 4, sd_direct_isr, 0);
+	irq_enable(SD_EVT_IRQn);
+
+	return 0;
+}
+
+SYS_INIT(sd_irq_init, APPLICATION, 0);

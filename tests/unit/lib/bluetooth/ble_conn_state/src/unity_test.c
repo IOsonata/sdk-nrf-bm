@@ -9,7 +9,7 @@
 #include <string.h>
 #include <stddef.h>
 #include <bm/bluetooth/ble_conn_state.h>
-#include "bm_compat.h"
+#include <zephyr/sys/util.h>
 
 static uint16_t conn_handle1;
 static uint16_t conn_handle2 = 1;

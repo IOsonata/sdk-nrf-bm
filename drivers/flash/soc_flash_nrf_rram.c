@@ -7,7 +7,12 @@
 #define DT_DRV_COMPAT nordic_rram_controller
 
 #include <string.h>
-#include "bm_compat.h"
+#include <zephyr/kernel.h>
+#include <zephyr/device.h>
+#include <zephyr/drivers/flash.h>
+#include <zephyr/logging/log.h>
+#include <zephyr/irq.h>
+#include <zephyr/sys/barrier.h>
 #include <hal/nrf_rramc.h>
 #include <nrf_soc.h>
 #include <bm/softdevice_handler/nrf_sdh.h>
@@ -33,6 +38,7 @@
  * For more details see NCSDK-26982.
  */
 
+LOG_MODULE_REGISTER(flash_nrf_rram, CONFIG_FLASH_LOG_LEVEL);
 
 #define RRAM DT_INST(0, soc_nv_flash)
 

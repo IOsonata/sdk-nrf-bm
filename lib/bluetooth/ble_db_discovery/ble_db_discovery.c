@@ -8,8 +8,9 @@
 #include <bm/bluetooth/ble_db_discovery.h>
 #include <bm/bluetooth/ble_gq.h>
 #include <bm/bluetooth/services/uuid.h>
-#include "bm_compat.h"
+#include <zephyr/logging/log.h>
 
+LOG_MODULE_REGISTER(ble_db_disc, CONFIG_BLE_DB_DISCOVERY_LOG_LEVEL);
 
 static ble_db_discovery_evt_handler registered_uuid_handler_get(
 	struct ble_db_discovery *db_discovery, const ble_uuid_t *srv_uuid)

@@ -11,8 +11,9 @@
 #include <ble_types.h>
 #include <ble_gattc.h>
 
-#include "bm_compat.h"
+#include <zephyr/logging/log.h>
 
+LOG_MODULE_REGISTER(ble_hrs_client, CONFIG_BLE_HRS_CLIENT_LOG_LEVEL);
 
 /* Bit mask used to extract the type of heart rate value. This is used to
  * find if the received heart rate is a 16 bit value or an 8 bit value.

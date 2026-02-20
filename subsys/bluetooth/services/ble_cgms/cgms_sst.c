@@ -13,8 +13,9 @@
 #include <bm/bluetooth/services/uuid.h>
 #include "cgms_sst.h"
 
-#include "bm_compat.h"
+#include <zephyr/logging/log.h>
 
+LOG_MODULE_DECLARE(ble_cgms, CONFIG_BLE_CGMS_LOG_LEVEL);
 
 #define CRC_LEN 2
 

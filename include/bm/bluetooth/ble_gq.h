@@ -24,7 +24,9 @@
 
 #include <bm/softdevice_handler/nrf_sdh_ble.h>
 
-#include "bm_compat.h"
+#include <zephyr/kernel.h>
+#include <zephyr/sys/slist.h>
+#include <zephyr/sys/util.h>
 
 #ifdef __cplusplus
 extern "C" {

@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
  */
 
-#include "bm_compat.h"
+#include <zephyr/types.h>
 #include <stddef.h>
 #include <sys/types.h>
 

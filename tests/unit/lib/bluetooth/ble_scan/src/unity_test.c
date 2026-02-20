@@ -10,7 +10,7 @@
 #include <stddef.h>
 #include <bm/bluetooth/ble_scan.h>
 #include <bm/softdevice_handler/nrf_sdh.h>
-#include "bm_compat.h"
+#include <zephyr/sys/iterable_sections.h>
 
 #include "cmock_ble_gap.h"
 #include "cmock_ble_gatts.h"

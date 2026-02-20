@@ -18,10 +18,15 @@
 #include <bm/bluetooth/services/uuid.h>
 #include <bm/bluetooth/services/ble_mcumgr.h>
 
-#include "bm_compat.h"
+#include <zephyr/kernel.h>
+#include <zephyr/mgmt/mcumgr/mgmt/mgmt.h>
+#include <zephyr/mgmt/mcumgr/smp/smp.h>
+#include <zephyr/mgmt/mcumgr/mgmt/handlers.h>
 #include <mgmt/mcumgr/transport/smp_internal.h>
 #include <mgmt/mcumgr/transport/smp_reassembly.h>
+#include <zephyr/logging/log.h>
 
+LOG_MODULE_REGISTER(mcumgr, CONFIG_BLE_MCUMGR_LOG_LEVEL);
 
 #define OPCODE_LENGTH 1
 #define HANDLE_LENGTH 2

@@ -10,8 +10,13 @@
 #include <ble.h>
 #include <bm/bluetooth/ble_gq.h>
 #include <bm/softdevice_handler/nrf_sdh_ble.h>
-#include "bm_compat.h"
+#include <zephyr/kernel.h>
+#include <zephyr/logging/log.h>
+#include <zephyr/sys/__assert.h>
+#include <zephyr/sys/slist.h>
+#include <zephyr/sys/util.h>
 
+LOG_MODULE_REGISTER(ble_gatt_queue, CONFIG_BLE_GQ_LOG_LEVEL);
 
 /* Function prototype for preparing a request for storage.
  *

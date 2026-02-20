@@ -4,7 +4,8 @@
  * SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
  */
 
-#include "bm_compat.h"
+#include <zephyr/logging/log.h>
+#include <zephyr/logging/log_ctrl.h>
 
 #include <nfc_t4t_lib.h>
 #include <bm/nfc/t4t/ndef_file.h>
@@ -26,6 +27,7 @@
 #include <hal/nrf_gpio.h>
 #include <board-config.h>
 
+LOG_MODULE_REGISTER(app, CONFIG_APP_BLE_PERIPHERAL_NFC_PAIRING_LOG_LEVEL);
 
 #define NDEF_MSG_BUF_SIZE	256
 

@@ -4,7 +4,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include "bm_compat.h"
+#include <zephyr/device.h>
+#include <zephyr/kernel.h>
+#include <zephyr/storage/flash_map.h>
 
 const struct flash_area default_flash_map[] = {
 	{

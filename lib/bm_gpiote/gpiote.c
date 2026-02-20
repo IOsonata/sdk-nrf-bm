@@ -7,8 +7,10 @@
 #include <stdint.h>
 #include <bm/bm_gpiote.h>
 #include <nrfx_gpiote.h>
-#include "bm_compat.h"
+#include <zephyr/irq.h>
+#include <zephyr/logging/log.h>
 
+LOG_MODULE_REGISTER(bm_gpiote, CONFIG_BM_GPIOTE_LOG_LEVEL);
 
 struct bm_gpiote_inst {
 	/* GPIOTE instance. */

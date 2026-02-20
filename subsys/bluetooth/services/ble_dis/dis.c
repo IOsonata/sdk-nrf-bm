@@ -9,7 +9,10 @@
 #include <ble_gatts.h>
 #include <bm/bluetooth/services/uuid.h>
 #include <bm/bluetooth/services/common.h>
-#include "bm_compat.h"
+#include <zephyr/logging/log.h>
+#include <zephyr/sys/byteorder.h>
+#include <zephyr/sys/util.h>
+#include <zephyr/sys/__assert.h>
 #include <bm/bluetooth/services/ble_dis.h>
 
 #define SYS_ID_LEN 8 /* Length of System ID Characteristic Value */
@@ -54,6 +57,7 @@ static const uint8_t regulatory_certifications[IEEE_CERT_LEN] =
 	sys_uint64_to_array(CONFIG_BLE_DIS_REGULATORY_CERT_LIST);
 #endif
 
+LOG_MODULE_REGISTER(ble_dis, CONFIG_BLE_DIS_LOG_LEVEL);
 
 uint32_t ble_dis_init(const struct ble_dis_config *dis_config)
 {

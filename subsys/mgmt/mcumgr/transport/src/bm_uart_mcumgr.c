@@ -6,10 +6,18 @@
  */
 
 #include <string.h>
-#include "bm_compat.h"
+#include <zephyr/kernel.h>
+#include <zephyr/drivers/uart.h>
+#include <zephyr/mgmt/mcumgr/transport/serial.h>
+#include <zephyr/drivers/console/uart_mcumgr.h>
+#include <zephyr/mgmt/mcumgr/mgmt/mgmt.h>
+#include <zephyr/mgmt/mcumgr/mgmt/callbacks.h>
+#include <zephyr/logging/log.h>
+#include <zephyr/init.h>
 #include <nrfx_uarte.h>
 #include <board-config.h>
 
+LOG_MODULE_REGISTER(uart_mcumgr, CONFIG_MCUMGR_TRANSPORT_LOG_LEVEL);
 
 static char uarte_rx_buf[CONFIG_MCUMGR_TRANSPORT_BM_UART_RX_BUF_SIZE];
 

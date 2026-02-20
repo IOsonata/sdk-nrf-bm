@@ -5,11 +5,19 @@
  */
 
 #include <string.h>
-#include "bm_compat.h"
+#include <zephyr/kernel.h>
+#include <zephyr/drivers/uart.h>
+#include <zephyr/mgmt/mcumgr/transport/serial.h>
+#include <zephyr/drivers/console/uart_mcumgr.h>
+#include <zephyr/mgmt/mcumgr/mgmt/mgmt.h>
+#include <zephyr/mgmt/mcumgr/mgmt/callbacks.h>
+#include <zephyr/sys/reboot.h>
+#include <zephyr/logging/log.h>
 #include <nrfx_uarte.h>
 #include <smp_uart.h>
 #include <board-config.h>
 
+LOG_MODULE_REGISTER(app_uart_mcumgr, CONFIG_APP_UART_MCUMGR_SAMPLE_LOG_LEVEL);
 
 static bool should_reboot;
 

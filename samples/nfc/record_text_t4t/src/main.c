@@ -4,7 +4,9 @@
  * SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
  */
 
-#include "bm_compat.h"
+#include <zephyr/kernel.h>
+#include <zephyr/logging/log.h>
+#include <zephyr/logging/log_ctrl.h>
 
 #include <nfc_t4t_lib.h>
 #include <bm/nfc/t4t/ndef_file.h>
@@ -19,6 +21,7 @@
 
 #include <board-config.h>
 
+LOG_MODULE_REGISTER(sample, CONFIG_SAMPLE_NFC_TEXT_RECORD_T4T_LOG_LEVEL);
 
 #define MAX_REC_COUNT		3
 #define NDEF_MSG_BUF_SIZE	128

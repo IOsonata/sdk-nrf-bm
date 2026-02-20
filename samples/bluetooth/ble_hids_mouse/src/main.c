@@ -27,10 +27,14 @@
 #include <bm/bm_timer.h>
 #include <bm/sensorsim.h>
 
-#include "bm_compat.h"
+#include <zephyr/kernel.h>
+#include <zephyr/toolchain.h>
+#include <zephyr/logging/log.h>
+#include <zephyr/logging/log_ctrl.h>
 
 #include <board-config.h>
 
+LOG_MODULE_REGISTER(sample, CONFIG_SAMPLE_BLE_HIDS_MOUSE_LOG_LEVEL);
 
 #define BASE_USB_HID_SPEC_VERSION 0x0101
 

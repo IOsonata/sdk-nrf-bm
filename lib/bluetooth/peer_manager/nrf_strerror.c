@@ -6,7 +6,7 @@
 
 #include <stdint.h>
 #include <stdlib.h>
-#include "bm_compat.h"
+#include <zephyr/sys/util.h>
 #include <nrf_error.h>
 #include <nrf_strerror.h>
 

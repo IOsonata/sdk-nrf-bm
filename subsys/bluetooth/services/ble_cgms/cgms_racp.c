@@ -18,8 +18,10 @@
 #include "cgms_db.h"
 #include "cgms_meas.h"
 
-#include "bm_compat.h"
+#include <zephyr/sys/byteorder.h>
+#include <zephyr/logging/log.h>
 
+LOG_MODULE_DECLARE(ble_cgms, CONFIG_BLE_CGMS_LOG_LEVEL);
 
 #define OPERAND_LESS_GREATER_FILTER_TYPE_SIZE  1
 #define OPERAND_LESS_GREATER_FILTER_PARAM_SIZE 2

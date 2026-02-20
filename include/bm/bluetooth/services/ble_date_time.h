@@ -20,7 +20,7 @@
 #define BLE_DATE_TIME_H__
 
 #include <stdint.h>
-#include "bm_compat.h"
+#include <zephyr/sys/byteorder.h>
 
 #ifdef __cplusplus
 extern "C" {

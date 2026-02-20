@@ -7,13 +7,22 @@
 #include <nrf_error.h>
 #include <stdint.h>
 #include <string.h>
-#include "bm_compat.h"
+#include <zephyr/kernel.h>
+#include <zephyr/logging/log.h>
+#include <zephyr/sys/util.h>
+#include <zephyr/sys/atomic.h>
+#include <zephyr/sys/__assert.h>
 #include <bm/fs/bm_zms.h>
 #include <bm/bluetooth/peer_manager/peer_manager_types.h>
 #include <modules/peer_manager_internal.h>
 #include <modules/peer_id.h>
 #include <modules/peer_data_storage.h>
 
+#if 0
+#define PEER_MANAGER_NODE DT_NODELABEL(peer_manager_partition)
+#define PEER_MANAGER_PARTITION_OFFSET DT_REG_ADDR(PEER_MANAGER_NODE)
+#define PEER_MANAGER_PARTITION_SIZE DT_REG_SIZE(PEER_MANAGER_NODE)
+#else
 /*
  * Peer Manager flash partition — replaces Zephyr devicetree lookup.
  *
@@ -35,7 +44,9 @@
 
 #define PEER_MANAGER_PARTITION_OFFSET  CONFIG_PM_PARTITION_OFFSET
 #define PEER_MANAGER_PARTITION_SIZE    CONFIG_PM_PARTITION_SIZE
+#endif
 
+LOG_MODULE_DECLARE(peer_manager, CONFIG_PEER_MANAGER_LOG_LEVEL);
 
 /* The number of registered event handlers. */
 #define PDS_EVENT_HANDLERS_CNT ARRAY_SIZE(evt_handlers)

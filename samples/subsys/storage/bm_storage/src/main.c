@@ -7,13 +7,17 @@
 #include <errno.h>
 #include <string.h>
 
-#include "bm_compat.h"
+#include <zephyr/kernel.h>
+#include <zephyr/logging/log.h>
+#include <zephyr/logging/log_ctrl.h>
+#include <zephyr/sys/util.h>
 
 #include <bm/softdevice_handler/nrf_sdh.h>
 #include <nrf_soc.h>
 
 #include <bm/storage/bm_storage.h>
 
+LOG_MODULE_REGISTER(sample, CONFIG_SAMPLE_BM_STORAGE_LOG_LEVEL);
 
 #define STORAGE0_PARTITION DT_NODELABEL(storage0_partition)
 #define STORAGE0_START DT_REG_ADDR(STORAGE0_PARTITION)

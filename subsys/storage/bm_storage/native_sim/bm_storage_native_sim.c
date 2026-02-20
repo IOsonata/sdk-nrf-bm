@@ -19,7 +19,7 @@ static void event_send(const struct bm_storage *storage, struct bm_storage_evt *
 }
 
 #if defined(CONFIG_BM_STORAGE_BACKEND_NATIVE_SIM_ASYNC)
-#include "bm_compat.h"
+#include <zephyr/kernel.h>
 
 #define BM_STORAGE_NATIVE_SIM_STACK_SIZE 512
 #define BM_STORAGE_NATIVE_SIM_PRIORITY	 5

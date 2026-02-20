@@ -12,7 +12,7 @@
  */
 
 #include <stdint.h>
-#include "bm_compat.h"
+#include <zephyr/kernel.h>
 #include <ble_gattc.h>
 #include <bm/bluetooth/ble_gq.h>
 #include <bm/bluetooth/ble_gatt_db.h>

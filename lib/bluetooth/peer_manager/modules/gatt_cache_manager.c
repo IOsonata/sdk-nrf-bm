@@ -19,8 +19,12 @@
 #include <modules/peer_database.h>
 #include <modules/gatt_cache_manager.h>
 
-#include "bm_compat.h"
+#include <zephyr/logging/log.h>
+#include <zephyr/sys/atomic.h>
+#include <zephyr/sys/util.h>
+#include <zephyr/sys/__assert.h>
 
+LOG_MODULE_DECLARE(peer_manager, CONFIG_PEER_MANAGER_LOG_LEVEL);
 
 #define MTX_LOCKED 1
 #define MTX_UNLOCKED 0

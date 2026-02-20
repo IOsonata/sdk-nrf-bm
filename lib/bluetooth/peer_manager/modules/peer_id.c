@@ -8,7 +8,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <limits.h>
-#include "bm_compat.h"
+#include <zephyr/sys/atomic.h>
 #include <nrf_bitmask.h>
 #include <bm/bluetooth/peer_manager/peer_manager_types.h>
 #include <modules/peer_id.h>

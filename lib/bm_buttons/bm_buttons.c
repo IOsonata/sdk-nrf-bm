@@ -8,8 +8,10 @@
 #include <bm/bm_buttons.h>
 #include <bm/bm_gpiote.h>
 #include <nrfx_gpiote.h>
-#include "bm_compat.h"
+#include <zephyr/irq.h>
+#include <zephyr/logging/log.h>
 
+LOG_MODULE_REGISTER(bm_buttons, CONFIG_BM_BUTTONS_LOG_LEVEL);
 
 #define BITS_PER_PIN 4
 #define NUM_PINS     CONFIG_BM_BUTTONS_NUM_PINS

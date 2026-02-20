@@ -6,7 +6,7 @@
 
 #include <stdbool.h>
 #include <string.h>
-#include "bm_compat.h"
+#include <zephyr/sys/atomic.h>
 #include <nrf_error.h>
 #include <modules/pm_buffer.h>
 

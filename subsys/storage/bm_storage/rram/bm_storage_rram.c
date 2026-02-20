@@ -6,7 +6,7 @@
 
 #include <errno.h>
 #include <stdint.h>
-#include "bm_compat.h"
+#include <zephyr/sys/atomic.h>
 #include <nrfx_rramc.h>
 #include <bm/storage/bm_storage.h>
 #include <bm/storage/bm_storage_backend.h>

@@ -20,7 +20,6 @@
 #include <ble_gap.h>
 #include <ble_hci.h>
 #include <bm/bluetooth/ble_gatt_db.h>
-#include "bm_compat.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -486,10 +485,10 @@ struct pm_evt {
 		struct pm_failure_evt peers_delete_failed_evt;
 		/** @brief Parameters specific to the @ref PM_EVT_ERROR_UNEXPECTED event. */
 		struct pm_failure_evt error_unexpected;
-#ifdef CONFIG_SOFTDEVICE_CENTRAL
+//#ifdef CONFIG_SOFTDEVICE_CENTRAL
 		/** @brief Parameters specific to the @ref PM_EVT_PERIPHERAL_SECURITY_REQ event. */
 		ble_gap_evt_sec_request_t peripheral_security_req;
-#endif
+//#endif
 		/**
 		 * @brief Parameters specific to the @ref PM_EVT_FLASH_GARBAGE_COLLECTION_FAILED
 		 *        event.

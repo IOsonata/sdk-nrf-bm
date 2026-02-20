@@ -4,8 +4,9 @@
  * SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
  */
 
-#include "bm_compat.h"
+#include <zephyr/sys/printk.h>
 #include <version.h>
+#include <zephyr_commit.h>
 #include <ncs_bare_metal_version.h>
 #include <ncs_bare_metal_commit.h>
 

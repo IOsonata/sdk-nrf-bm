@@ -4,12 +4,16 @@
  * SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
  */
 
-#include "bm_compat.h"
+#include <zephyr/kernel.h> /* k_busy_wait() */
+#include <zephyr/sys_clock.h> /* USEC_PER_MSEC */
+#include <zephyr/logging/log.h>
+#include <zephyr/logging/log_ctrl.h>
 
 #include <hal/nrf_gpio.h>
 
 #include <board-config.h>
 
+LOG_MODULE_REGISTER(sample, CONFIG_SAMPLE_LEDS_LOG_LEVEL);
 
 static void led_init(void)
 {

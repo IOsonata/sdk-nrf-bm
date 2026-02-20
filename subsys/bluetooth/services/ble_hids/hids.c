@@ -15,11 +15,15 @@
 #include <bm/bluetooth/services/uuid.h>
 #include <bm/bluetooth/services/common.h>
 #include <bm/softdevice_handler/nrf_sdh_ble.h>
-#include "bm_compat.h"
+#include <zephyr/toolchain.h>
+#include <zephyr/logging/log.h>
+#include <zephyr/sys/util.h>
+#include <zephyr/sys/__assert.h>
 
 /** @brief The number of bytes in a word. */
 #define BYTES_PER_WORD (4)
 
+LOG_MODULE_REGISTER(ble_hids, CONFIG_BLE_HIDS_LOG_LEVEL);
 
 /* Boot Protocol Mode. */
 #define PROTOCOL_MODE_BOOT 0x00

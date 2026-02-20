@@ -14,8 +14,10 @@
 #include "cgms_sst.h"
 #include "cgms_socp.h"
 
-#include "bm_compat.h"
+#include <zephyr/sys/byteorder.h>
+#include <zephyr/logging/log.h>
 
+LOG_MODULE_DECLARE(ble_cgms, CONFIG_BLE_CGMS_LOG_LEVEL);
 
 /* Medfloat16 value. Represent a positive infinite value. */
 #define BLE_CGMS_PLUS_INFINITE 0x07FE
