@@ -7,6 +7,11 @@
 #include <nrf_error.h>
 #include <nrf_strerror.h>
 #include <string.h>
+
+#include <zephyr/logging/log.h>
+#include <zephyr/sys/util.h>
+#include <zephyr/sys/__assert.h>
+
 #include <ble_err.h>
 #include <bm/bluetooth/ble_conn_state.h>
 #if defined(CONFIG_PM_LESC)
@@ -18,9 +23,6 @@
 #include <modules/peer_data_storage.h>
 #include <modules/security_manager.h>
 
-#include <zephyr/logging/log.h>
-#include <zephyr/sys/util.h>
-#include <zephyr/sys/__assert.h>
 
 LOG_MODULE_DECLARE(peer_manager, CONFIG_PEER_MANAGER_LOG_LEVEL);
 

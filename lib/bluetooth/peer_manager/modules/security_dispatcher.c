@@ -8,6 +8,11 @@
 #include <nrf_strerror.h>
 #include <stdint.h>
 #include <string.h>
+
+#include <zephyr/logging/log.h>
+#include <zephyr/sys/util.h>
+#include <zephyr/sys/__assert.h>
+
 #include <ble.h>
 #include <ble_gap.h>
 #include <ble_err.h>
@@ -22,9 +27,6 @@
 #include <modules/auth_status_tracker.h>
 #endif /* CONFIG_PM_RA_PROTECTION */
 
-#include <zephyr/logging/log.h>
-#include <zephyr/sys/util.h>
-#include <zephyr/sys/__assert.h>
 
 LOG_MODULE_DECLARE(peer_manager, CONFIG_PEER_MANAGER_LOG_LEVEL);
 
