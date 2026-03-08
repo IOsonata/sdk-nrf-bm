@@ -26,6 +26,7 @@
 .. _`nRF54L15 DK`: https://docs.nordicsemi.com/bundle/ncs-latest/page/zephyr/boards/nordic/nrf54l15dk/doc/index.html#nrf54l15dk-nrf54l15
 .. _`nRF54L15 DK v1.0.0`: https://docs.nordicsemi.com/bundle/comp_matrix_nrf54l15/page/COMP/nrf54l15/nrf54l15_ic_rev_comp_with_dev_hw.html
 .. _`nRF54L15 DK v0.9.3`: https://docs.nordicsemi.com/bundle/comp_matrix_nrf54l15/page/COMP/nrf54l15/nrf54l15_ic_rev_comp_with_dev_hw.html
+.. _`nRF54LM20 DK`: https://docs.nordicsemi.com/bundle/ncs-latest/page/zephyr/boards/nordic/nrf54lm20dk/doc/index.html
 
 .. _`nRF54LV10 DK`: https://docs.nordicsemi.com/bundle/ug_nrf54lv10_dk/page/UG/nRF54LV10_DK/intro/intro.html
 
@@ -60,7 +61,7 @@
 
 .. ### Drivers
 
-.. _`SoftDevice Controller`: https://docs.nordicsemi.com/bundle/ncs-latest/page/nrfxlib/softdevice_controller/doc/softdevice_controller.html#:~:text=For%20the%20nRF54L%20Series%3A
+.. _`SoftDevice Controller Integration`: https://docs.nordicsemi.com/bundle/ncs-latest/page/nrfxlib/softdevice_controller/doc/softdevice_controller.html#:~:text=For%20the%20nRF54L%20Series%3A
 .. _`Multiprotocol Service Layer`: https://docs.nordicsemi.com/bundle/ncs-latest/page/nrfxlib/mpsl/doc/mpsl.html#:~:text=For%20the%20nRF54L%20Series%3A
 .. _`SoftDevice Specification`: https://docs.nordicsemi.com/bundle/sds_s115/page/SDS/s1xx/s115.html
 .. _`S115 SoftDevice Specification`: https://docs.nordicsemi.com/bundle/sds_s115/page/SDS/s1xx/s115.html
@@ -74,12 +75,13 @@
 .. _`How to flash an application`: https://docs.nordicsemi.com/bundle/nrf-connect-vscode/page/get_started/quick_debug.html#how-to-flash-an-application
 .. _`How to connect to the terminal`: https://docs.nordicsemi.com/bundle/nrf-connect-vscode/page/get_started/quick_debug.html#how-to-connect-to-the-terminal
 .. _`nRF Connect for Desktop`: https://www.nordicsemi.com/Software-and-Tools/Development-Tools/nRF-Connect-for-desktop
+.. _`additional requirements`: https://docs.nordicsemi.com/bundle/nrf-connect-desktop/page/download_cfd.html
 .. _`nRF Connect Device Manager`: https://www.nordicsemi.com/Products/Development-tools/nRF-Connect-Device-Manager
 .. _`nRF Toolbox`: https://www.nordicsemi.com/Software-and-Tools/Development-Tools/nRF-Toolbox
-.. _`Bluetooth Low Energy app`: https://docs.nordicsemi.com/bundle/nrf-connect-ble/page/index.html
-.. _`Serial Terminal app`: https://docs.nordicsemi.com/bundle/nrf-connect-serial-terminal/page/index.html
+.. _`Bluetooth Low Energy app`: https://docs.nordicsemi.com/bundle/swtools_docs/page/app/pc-nrfconnect-ble/index.html
+.. _`Serial Terminal app`: https://docs.nordicsemi.com/bundle/swtools_docs/page/app/pc-nrfconnect-serial-terminal/index.html
 .. _`Configuring Kconfig`: https://docs.nordicsemi.com/bundle/ncs-latest/page/nrf/app_dev/config_and_build/kconfig/index.html
-.. _`Power Profiler app`: https://docs.nordicsemi.com/bundle/nrf-connect-ppk/page/index.html
+.. _`Power Profiler app`: https://docs.nordicsemi.com/bundle/swtools_docs/page/app/pc-nrfconnect-ppk/index.html
 .. _`Power Profiler Kit II (PPK2)`: https://docs.nordicsemi.com/bundle/ug_ppk2/page/UG/ppk/PPK_user_guide_Intro.html
 .. _`nRF Connect for Mobile`: https://www.nordicsemi.com/Software-and-Tools/Development-Tools/nRF-Connect-for-mobile
 

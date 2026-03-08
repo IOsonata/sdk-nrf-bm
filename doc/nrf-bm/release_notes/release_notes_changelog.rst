@@ -3,11 +3,7 @@
 Changelog for |BMlong| v1.0.99
 ##############################
 
-The most relevant changes that are present on the main branch of the nRF Connect SDK Bare Metal, as compared to the latest official release, are tracked in this file.
-
-.. note::
-
-   This file is a work in progress and might not cover all relevant changes.
+This changelog reflects the most relevant changes from the latest official release.
 
 Changelog
 *********
@@ -17,17 +13,20 @@ The following sections provide detailed lists of changes by component.
 SDK installation
 ================
 
-No changes since the latest nRF Connect SDK Bare Metal release.
+* Updated the steps to install prerequisites in the :ref:`install_nrf_bm` page.
+  Installation of the recommended version of SEGGER J-Link is now handled by `nRF Connect for Desktop`_.
 
 S115 SoftDevice
 ===============
 
-No changes since the latest nRF Connect SDK Bare Metal release.
+* Updated the SoftDevice to v10.0.0-1.prototype.
+  See the SoftDevice release notes for details.
 
 S145 SoftDevice
 ===============
 
-No changes since the latest nRF Connect SDK Bare Metal release.
+* Updated the SoftDevice to v10.0.0-1.prototype.
+  See the SoftDevice release notes for details.
 
 SoftDevice Handler
 ==================
@@ -37,8 +36,15 @@ SoftDevice Handler
 Boards
 ======
 
-* Added experimental support for PCA10188 (`nRF54LV10 DK`_)
+* Added experimental support for the following boards:
+
+   * PCA10188 (`nRF54LV10 DK`_)
+   * PCA10184 (`nRF54LM20 DK`_)
+   * PCA10214 (nRF54LS05 DK)
+
 * Adjusted SRAM sizes for the ``bm_nrf54l15dk`` board target to not overlap with VPR context.
+* Adjusted the board memory layout for all boards to align with the new SoftDevice.
+* Disabled all Peripheral Resource Sharing (PRS) boxes for the ``bm_nrf54l15dk`` board variants.
 
 Build system
 ============
@@ -71,12 +77,15 @@ Drivers
 Libraries
 =========
 
+* Added the :ref:`lib_bm_gpiote` library.
+
 * :ref:`lib_peer_manager` library:
 
+   * Added the :kconfig:option:`CONFIG_BLE_GATT_DB_MAX_CHARS` Kconfig option for configuring the number of characteristics in a :c:struct:`ble_gatt_db_srv` structure.
+     The number of characteristics was previously set using the :c:macro:`BLE_GATT_DB_MAX_CHARS` definition in the :file:`ble_gatt_db.h` file.
+   * Fixed spelling of the ``characteristics`` member of the :c:struct:`ble_gatt_db_srv` structure.
    * Removed the ``CONFIG_MBEDTLS_PSA_STATIC_KEY_SLOT_BUFFER_SIZE`` Kconfig option.
      The PSA Crypto core can deduce the key slot buffer size based on the keys enabled in the build, so there is no need to define the size manually.
-
-* Added the :ref:`lib_bm_gpiote` library.
 
 * :ref:`lib_bm_buttons` library:
 
@@ -86,24 +95,40 @@ Libraries
 
    * Added the ``const`` keyword to the configuration structure parameter of the :c:func:`ble_adv_init` function to reflect that the function only reads from the configuration and does not modify it.
 
+   * Updated:
+
+      * The :kconfig:option:`CONFIG_BLE_ADV_EXTENDED_ADVERTISING` Kconfig option to be disabled by default and dependent on the new :kconfig:option:`CONFIG_SOFTDEVICE_EXTENDED_ADVERTISING` Kconfig option.
+      * The :kconfig:option:`CONFIG_BLE_ADV_DIRECTED_ADVERTISING` Kconfig option to be disabled by default.
+
    * Fixed:
 
       * An issue causing fast advertising with allow list to incorrectly send event :c:enumerator:`BLE_ADV_EVT_FAST` when it should have sent event :c:enumerator:`BLE_ADV_EVT_FAST_ALLOW_LIST`.
       * An issue causing slow advertising with allow list to incorrectly send event :c:enumerator:`BLE_ADV_EVT_SLOW` when it should have sent event :c:enumerator:`BLE_ADV_EVT_SLOW_ALLOW_LIST`.
+      * An issue in the data module where the short name would not be matched in certain cases.
 
-   * Updated:
+* :ref:`lib_ble_db_discovery`:
 
-      * Changed the :kconfig:option:`CONFIG_BLE_ADV_EXTENDED_ADVERTISING` Kconfig option to be disabled by default and dependent on the new :kconfig:option:`CONFIG_SOFTDEVICE_EXTENDED_ADVERTISING` Kconfig option.
-      * Changed the :kconfig:option:`CONFIG_BLE_ADV_DIRECTED_ADVERTISING` Kconfig option to be disabled by default.
+   * Removed the :c:struct:`ble_db_discovery_user_evt` structure after a rework.
 
 * :ref:`lib_ble_scan`:
 
+   * Added the :c:struct:`ble_scan_filter_data` structure as input to the :c:func:`ble_scan_filter_add` function.
    * Updated functions to use the ``uint32_t`` type instead of ``int`` when returning nrf_errors.
+   * Fixed an issue with active scanning where the multifilter match was used.
+     A match would not be triggered unless the data for all types of enabled filters were provided in either the advertising or scan response data.
+     Now the data can be provided in a mix of the advertising and scan response data.
+   * Renamed the ``allow_list_used`` function to :c:func:`ble_scan_is_allow_list_used`.
+   * Aligned the name of the :c:type:`ble_gap_evt_adv_report_t` fields in the :c:struct:`ble_scan_evt` struct to ``adv_report``.
+
+
+* Bluetooth LE Connection state library:
+
+   * Deprecated the library. Applications and other libraries and services should keep an internal state of required connections instead.
 
 Bluetooth LE Services
 ---------------------
 
-* Renamed the ``ble_hrs_central`` service to the :ref:`lib_ble_service_hrs_client` sample.
+* Renamed the Bluetooth: Heart Rate Service Central (``ble_hrs_central``) to the :ref:`lib_ble_service_hrs_client` sample.
 * Updated all services to return errors from the SoftDevice directly.
 * Removed the BMS authorization code Kconfig options (:kconfig:option:`CONFIG_BLE_BMS_AUTHORIZATION_CODE` and :kconfig:option:`CONFIG_BLE_BMS_USE_AUTHORIZATION_CODE`) from the service library, as they are only used by the BMS sample.
 
@@ -114,10 +139,10 @@ Libraries for NFC
   The NFC related Kconfig options provided by |BMshort| have the ``BM_NFC_`` prefix.
   The following list shows mapping from |NCS| Kconfig options to |BMshort| Kconfig options:
 
-  * ``CONFIG_NFCT_IRQ_PRIORITY`` ``-->`` :kconfig:option:`CONFIG_BM_NFCT_IRQ_PRIORITY`
-  * ``CONFIG_NFC_PLATFORM_LOG_LEVEL*`` ``-->`` :kconfig:option:`CONFIG_BM_NFC_PLATFORM_LOG_LEVEL*`
-  * ``CONFIG_NFC_NDEF*`` ``-->`` :kconfig:option:`CONFIG_BM_NFC_NDEF*`
-  * ``CONFIG_NFC_T4T_NDEF_FILE`` ``-->`` :kconfig:option:`CONFIG_BM_NFC_T4T_NDEF_FILE`
+  * ``CONFIG_NFCT_IRQ_PRIORITY`` --> :kconfig:option:`CONFIG_BM_NFCT_IRQ_PRIORITY`
+  * ``CONFIG_NFC_PLATFORM_LOG_LEVEL*`` --> :kconfig:option:`CONFIG_BM_NFC_PLATFORM_LOG_LEVEL*`
+  * ``CONFIG_NFC_NDEF*`` --> :kconfig:option:`CONFIG_BM_NFC_NDEF*`
+  * ``CONFIG_NFC_T4T_NDEF_FILE`` --> :kconfig:option:`CONFIG_BM_NFC_T4T_NDEF_FILE`
 
   Use ``#include <bm/nfc/..>`` to include NFC related header files provided by |BMshort| instead of ``#include <nfc/...>``.
 
@@ -139,9 +164,19 @@ Samples
 Bluetooth LE samples
 --------------------
 
+* Added the :ref:`peripheral_nfc_pairing_sample`.
+
 * :ref:`ble_bms_sample`:
 
-   * Added sample-specific Kconfig options for the BMS authorization code by moving them from the service library scope and renaming them from :kconfig:option:`CONFIG_BLE_BMS_AUTHORIZATION_CODE` and :kconfig:option:`CONFIG_BLE_BMS_USE_AUTHORIZATION_CODE` to :kconfig:option:`CONFIG_APP_BLE_BMS_AUTHORIZATION_CODE` and :kconfig:option:`CONFIG_APP_BLE_BMS_USE_AUTHORIZATION_CODE`.
+   * Added sample-specific Kconfig options for the BMS authorization code by moving them from the service library scope and renaming them from ``CONFIG_BLE_BMS_AUTHORIZATION_CODE`` and ``CONFIG_BLE_BMS_USE_AUTHORIZATION_CODE`` to :kconfig:option:`CONFIG_APP_BLE_BMS_AUTHORIZATION_CODE` and :kconfig:option:`CONFIG_APP_BLE_BMS_USE_AUTHORIZATION_CODE`.
+
+* :ref:`ble_hrs_sample` sample:
+
+   * Added support for the new board targets:
+
+     * PCA10188 (`nRF54LV10 DK`_)
+     * PCA10184 (`nRF54LM20 DK`_)
+     * PCA10214 (nRF54LS05 DK)
 
 * :ref:`ble_hids_keyboard_sample`:
 
@@ -153,28 +188,32 @@ Bluetooth LE samples
 
 * :ref:`ble_nus_sample` sample:
 
+   * Added support for the new board targets:
+
+     * PCA10188 (`nRF54LV10 DK`_)
+     * PCA10184 (`nRF54LM20 DK`_)
+     * PCA10214 (nRF54LS05 DK)
+
    * Updated to align with changes to the :ref:`driver_lpuarte` driver.
 
 * :ref:`ble_pwr_profiling_sample`:
 
    * Updated to use a dedicated variable to hold the service attribute handle instead of incorrectly using the connection handle variable for this during service initialization.
 
-* :ref:`peripheral_nfc_pairing_sample`:
-
-   * Added the new sample.
-
 NFC samples
 -----------
 
-* Use ``CONFIG_BM_NFC_*`` Kconfig options provided by |BMshort| instead of ``CONFIG_NFC_*`` options provided by |NCS|
+* Updated to use ``CONFIG_BM_NFC_*`` Kconfig options provided by |BMshort| instead of ``CONFIG_NFC_*`` options provided by |NCS|.
   Use ``#include <bm/nfc/...>`` headers provided by |BMshort| instead of ``#include <nfc/...>`` headers from |NCS|.
 
 Peripheral samples
 ------------------
 
+* Added the :ref:`bm_ppi_sample` sample.
+
 * :ref:`bm_lpuarte_sample` sample:
 
-   * Updated to align with changes to the :ref:`driver_lpuarte` driver.
+  * Updated to align with changes to the :ref:`driver_lpuarte` driver.
 
 DFU samples
 -----------
@@ -195,3 +234,4 @@ Documentation
 =============
 
 * Improved sample documentation with clearer, more descriptive user guides, including updated explanations of configuration options, hardware connections, and testing procedures.
+* Added the :ref:`board_memory_layouts` section, which documents RRAM and SRAM partition layouts for supported boards.
