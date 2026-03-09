@@ -19,6 +19,8 @@
 #include <ble.h>
 #include <ble_gattc.h>
 
+#include "bm_config_defaults.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
