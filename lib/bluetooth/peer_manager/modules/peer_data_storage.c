@@ -12,6 +12,10 @@
 #include <zephyr/sys/util.h>
 #include <zephyr/sys/atomic.h>
 #include <zephyr/sys/__assert.h>
+/* nRF54L series uses the SoftDevice flash backend. */
+#ifndef CONFIG_BM_STORAGE_BACKEND_SD
+#define CONFIG_BM_STORAGE_BACKEND_SD  1
+#endif
 #include <bm/storage/bm_storage_backends.h>
 #include <bm/fs/bm_zms.h>
 #include <bm/bluetooth/peer_manager/peer_manager_types.h>
@@ -19,9 +23,16 @@
 #include <modules/peer_id.h>
 #include <modules/peer_data_storage.h>
 
-#define PEER_MANAGER_NODE DT_NODELABEL(peer_manager_partition)
-#define PEER_MANAGER_PARTITION_OFFSET DT_REG_ADDR(PEER_MANAGER_NODE)
-#define PEER_MANAGER_PARTITION_SIZE DT_REG_SIZE(PEER_MANAGER_NODE)
+/* Bare-metal: replaces DT_NODELABEL/DT_REG_ADDR/DT_REG_SIZE.
+ * nRF54L15 S145: storage_partition base 0x156c00, peer_manager sub-partition
+ * local offset 0x0 → absolute 0x156c00, size 4 KB.
+ * Override by defining these before including any sdk-nrf-bm header. */
+#ifndef PEER_MANAGER_PARTITION_OFFSET
+#define PEER_MANAGER_PARTITION_OFFSET  0x00156c00UL
+#endif
+#ifndef PEER_MANAGER_PARTITION_SIZE
+#define PEER_MANAGER_PARTITION_SIZE    0x00001000UL
+#endif
 
 LOG_MODULE_DECLARE(peer_manager, CONFIG_PEER_MANAGER_LOG_LEVEL);
 
