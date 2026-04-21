@@ -56,6 +56,7 @@ Boards
    * The SRAM sizes for the ``bm_nrf54l15dk`` board target to not overlap with VPR context.
    * The board memory layout for all boards to align with the new SoftDevice.
    * The LPUARTE pins in ``board-config.h`` for ``bm_nrf54l15dk`` to avoid conflicts for LEDs, buttons and other peripherals where possible.
+   * The board RAM memory layout for all boards with one node for SoftDevice RAM, combining the static and dynamic nodes to simplify the representation.
 
 * Disabled all Peripheral Resource Sharing (PRS) boxes for the ``bm_nrf54l15dk`` board variants.
 
@@ -67,7 +68,24 @@ Build system
 DFU
 ===
 
-* Updated the image upload NVM writes to be handled in synchronization with SD.
+* Added:
+
+   * Experimental support for nRF54LV10a, nRF54LM20a, and nRF54LS05b SoCs.
+   * The :kconfig:option:`CONFIG_BM_MCUMGR_GRP_IMG_BUFFER_SZ` Kconfig option to set the size of the data buffer.
+   * The :kconfig:option:`CONFIG_BM_MCUMGR_GRP_IMG_NVM_WRITE_BLOCKS_MAX` Kconfig option to set the maximum number of non-volatile memory wear units written to NVM at once.
+
+* Updated:
+
+   * Image upload NVM writes to be handled in synchronization with SD.
+   * Improved download speed performance over bluetoth LE.
+   * The support for Setting up DFU Device Bluetooth name remotely. It consumes less RAM and RRAM compared to the previous implementation.
+     New solution is enabled by the :kconfig:option:`CONFIG_BM_FLAT_SETTINGS_BLUETOOTH_NAME` Kconfig option.
+     It empploys newly added Inter application RAM Clipboard storage.
+   * Support for nRF54L15, nRF54L10, and nRF54L05 SoCs is no longer experimental and is now fully supported and ready to be used.
+
+Removed:
+
+   * The :kconfig:option:`CONFIG_NCS_BM_SETTINGS_BLUETOOTH_NAME` Kconfig option and zephyr-rtos settings subsystem handlers for Setting up DFU Device Bluetooth name remotely.
 
 Interrupts
 ==========
@@ -101,6 +119,7 @@ Storage
      * The :c:func:`bm_storage_nvm_info_get` function to retrieve NVM information, such as the size of the program unit and other.
      * The :c:member:`bm_storage_config.is_wear_aligned` configuration flag to enforce wear unit alignment on operations.
      * The :c:member:`bm_storage_config.is_write_padded` configuration flag to automatically pad write operations to the alignment unit.
+     * The :c:func:`bm_storage_evt_dispatch` function for event delivery.
 
    Updated:
      * The :c:func:`bm_storage_is_busy` function to return ``false`` instead of ``true`` when called with a ``NULL`` pointer or an uninitialized instance.
@@ -111,10 +130,20 @@ Storage
      * The SoftDevice backend to support chunking of write operations.
      * The ``no_explicit_erase`` field in :c:struct:`bm_storage_info` has been renamed to ``is_erase_before_write`` to explicitly convey that the memory must be erased before it can be written to.
      * The SoftDevice backend's :c:member:`bm_storage_info.program_unit` from 16 to 4 bytes, reflecting the true minimum programmable unit.
-     * The ``start_addr`` and ``end_addr`` fields in :c:struct:`bm_storage_config` and :c:struct:`bm_storage` have been replaced by ``addr`` and ``size``. The API now uses relative addressing (0-based offsets within the partition).
+     * The ``start_addr`` and ``end_addr`` fields in :c:struct:`bm_storage_config` and :c:struct:`bm_storage` have been replaced by ``addr`` and ``size``.
+       The API now uses relative addressing (0-based offsets within the partition).
      * The :c:func:`bm_storage_write` and :c:func:`bm_storage_erase` functions to return ``-ENOMEM`` when out of memory, instead of ``-EIO``.
      * The :c:func:`bm_storage_read`, :c:func:`bm_storage_write`, and :c:func:`bm_storage_erase` functions to return ``-EINVAL`` on alignment errors, instead of ``-EFAULT``.
      * The :c:enum:`bm_storage_evt_dispatch_type` enum and the :c:member:`bm_storage_evt.dispatch_type` field have been replaced by a boolean :c:member:`bm_storage_evt.is_async`.
+     * All backends to use the new :c:func:`bm_storage_evt_dispatch` function for event delivery.
+       For backends without an internal operation queue (such as RRAM), enabling :c:func:`bm_scheduler` defers synchronous events to the main thread context.
+     * The SoftDevice backend to process operations iteratively instead of recursively when the SoftDevice is disabled.
+       Re-entrant calls from event handlers are safely enqueued and processed by the loop.
+
+* ``bm_rmem`` library:
+
+   * Added the new inter-application RAM Clipboard storage. It is a simple on SRAM storage aimed to provide inter applications data clipboards.
+     It can be enabled by the :kconfig:option:`CONFIG_BM_RMEM` Kconfig option.
 
 Filesystem
 ----------
@@ -136,6 +165,8 @@ Libraries
    * Updated the ``params`` union field of the :c:struct:`pm_evt` structure to an anonymous union.
    * Removed the ``CONFIG_MBEDTLS_PSA_STATIC_KEY_SLOT_BUFFER_SIZE`` Kconfig option.
      The PSA Crypto core can deduce the key slot buffer size based on the keys enabled in the build, so there is no need to define the size manually.
+   * Fixed the :c:func:`pm_peer_data_store`, :c:func:`pm_peer_data_remote_db_store` and :c:func:`pm_peer_data_app_data_store` functions to allow data lengths that are not word aligned.
+   * Added a missing word alignment check of the ``data`` parameter to the :c:func:`pm_peer_data_store` function.
 
 * :ref:`lib_bm_buttons` library:
 
@@ -147,6 +178,7 @@ Libraries
 
       * The ``const`` keyword to the configuration structure parameter of the :c:func:`ble_adv_init` function to reflect that the function only reads from the configuration and does not modify it.
       * The advertising name to the configuration structure of the :c:func:`ble_adv_init` function.
+      * The :c:func:`ble_adv_stop` function to stop advertising.
 
    * Updated:
 
@@ -206,7 +238,10 @@ Libraries
 Bluetooth LE Services
 ---------------------
 
-* Added the :c:member:`ble_cgms_config.initial_comm_interval` to the :c:struct:`ble_cgms_config` structure to set the initial communication interval.
+* Added:
+
+   * The :ref:`lib_ble_service_bas_client` service.
+   * The :c:member:`ble_cgms_config.initial_comm_interval` to the :c:struct:`ble_cgms_config` structure to set the initial communication interval.
 * Renamed the Bluetooth: Heart Rate Service Central (``ble_hrs_central``) to the :ref:`lib_ble_service_hrs_client` sample.
 * Updated all services to return errors from the SoftDevice directly.
 * Removed the BMS authorization code Kconfig options (:kconfig:option:`CONFIG_BLE_BMS_AUTHORIZATION_CODE` and :kconfig:option:`CONFIG_BLE_BMS_USE_AUTHORIZATION_CODE`) from the service library, as they are only used by the BMS sample.
@@ -244,8 +279,14 @@ Bluetooth LE Services
       * The :c:struct:`ble_hrs_client_evt` structure was aligned with other client services.
       * The ``hrs_db`` structure was renamed to :c:struct:`ble_hrs_handles`.
       * The ``ble_hrm`` structure was renamed to :c:struct:`ble_hrs_measurement`.
+      * The ``params`` union field of the :c:struct:`ble_hrs_client_evt` structure to an anonymous union.
 
    * Fixed a potential buffer over-read when parsing malformed Heart Rate Measurement notifications.
+
+* :ref:`lib_ble_service_nus`:
+
+   * Removed the ``ble_nus_client_context`` structure and the ``link_ctx`` field from :c:struct:`ble_nus_evt` structure.
+     The service now reads the CCCD directly from the SoftDevice instead of caching notification state internally.
 
 * :ref:`lib_ble_service_nus_client` service:
 
@@ -255,10 +296,6 @@ Bluetooth LE Services
 
    * Updated the ``params`` union field of the :c:struct:`ble_hids_evt` structure to an anonymous union.
 
-* :ref:`lib_ble_service_hrs_client` service:
-
-   * Updated the ``params`` union field of the :c:struct:`ble_hrs_client_evt` structure to an anonymous union.
-
 * :ref:`lib_ble_service_bms` service:
 
    * Updated the security configuration of the :c:struct:`ble_bms_config` structure to align with other services.
@@ -267,19 +304,27 @@ Bluetooth LE Services
 Libraries for NFC
 -----------------
 
-* The maturity status of NFC libraries has been changed from Experimental to Supported for the following SoCs: nRF54L05, nRF54L10, and nRF54L15, nRF54LM20A is still in Experimental quality.
-* The NFC subsystem code has been migrated to |BMshort| and does not reuse code form |NCS| anymore.
-  The NFC related Kconfig options provided by |BMshort| have the ``BM_NFC_`` prefix.
-  The following list shows mapping from |NCS| Kconfig options to |BMshort| Kconfig options:
+* Added:
 
-  * ``CONFIG_NFCT_IRQ_PRIORITY`` --> :kconfig:option:`CONFIG_BM_NFCT_IRQ_PRIORITY`
-  * ``CONFIG_NFC_PLATFORM_LOG_LEVEL*`` --> :kconfig:option:`CONFIG_BM_NFC_PLATFORM_LOG_LEVEL*`
-  * ``CONFIG_NFC_NDEF*`` --> :kconfig:option:`CONFIG_BM_NFC_NDEF*`
-  * ``CONFIG_NFC_T4T_NDEF_FILE`` --> :kconfig:option:`CONFIG_BM_NFC_T4T_NDEF_FILE`
+  * The NFC libraries for NFC Connection Handover and Bluetooth LE Out-of-Band (OOB) pairing.
+  * The workaround to ensure the ``FRAMEDELAYMAX`` register is set to the default value when a field is lost.
+    This avoids violating protocol timing, which can lead readers to reject the NFC tag's response.
 
-  Use ``#include <bm/nfc/..>`` to include NFC related header files provided by |BMshort| instead of ``#include <nfc/...>``.
+* Updated:
 
-* Added NFC libraries for NFC Connection Handover and Bluetooth LE Out-of-Band (OOB) pairing.
+  * The maturity status of NFC libraries from Experimental to Supported for the SoCs nRF54L05, nRF54L10, and nRF54L15 SoCs.
+    The nRF54LM20A SoC is still in Experimental quality.
+  * The NFC subsystem code by migrating it to |BMshort|.
+    It does not reuse code form |NCS| anymore.
+    The NFC related Kconfig options provided by |BMshort| have the ``BM_NFC_`` prefix.
+    The following list shows mapping from |NCS| Kconfig options to |BMshort| Kconfig options:
+
+    * ``CONFIG_NFCT_IRQ_PRIORITY`` --> :kconfig:option:`CONFIG_BM_NFCT_IRQ_PRIORITY`
+    * ``CONFIG_NFC_PLATFORM_LOG_LEVEL*`` --> :kconfig:option:`CONFIG_BM_NFC_PLATFORM_LOG_LEVEL*`
+    * ``CONFIG_NFC_NDEF*`` --> :kconfig:option:`CONFIG_BM_NFC_NDEF*`
+    * ``CONFIG_NFC_T4T_NDEF_FILE`` --> :kconfig:option:`CONFIG_BM_NFC_T4T_NDEF_FILE`
+
+    Use ``#include <bm/nfc/..>`` to include NFC related header files provided by |BMshort| instead of ``#include <nfc/...>``.
 
 Utils
 -----
@@ -331,6 +376,10 @@ Bluetooth LE samples
 
    * Fixed an issue where the sample did not enter or exit boot mode properly based on the HID events.
 
+* :ref:`ble_hrs_central_sample` sample:
+
+   * Added the :ref:`lib_ble_service_bas_client` service to the sample.
+
 * :ref:`ble_nus_sample` sample:
 
    * Updated to align with changes to the :ref:`driver_lpuarte` driver.
@@ -358,7 +407,12 @@ Peripheral samples
 DFU samples
 -----------
 
-No changes since the latest nRF Connect SDK Bare Metal release.
+* Updated:
+
+   * The :ref:`ble_mcuboot_recovery_entry_sample` can be build with size-optimized configuration of MCUboot and firmware loader.
+     To enable the size-optimized configuration, set :makevar:`FILE_SUFFIX` to ``size_opt`` when building the sample.
+   * The :ref:`ble_mcuboot_recovery_entry_sample` migrates to new soultion for Setting up DFU Device Bluetooth name remotely.
+     See the :ref:`ug_dfu` page for details.
 
 Subsystem samples
 -----------------
