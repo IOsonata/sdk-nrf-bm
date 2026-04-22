@@ -167,6 +167,7 @@ Libraries
      The PSA Crypto core can deduce the key slot buffer size based on the keys enabled in the build, so there is no need to define the size manually.
    * Fixed the :c:func:`pm_peer_data_store`, :c:func:`pm_peer_data_remote_db_store` and :c:func:`pm_peer_data_app_data_store` functions to allow data lengths that are not word aligned.
    * Added a missing word alignment check of the ``data`` parameter to the :c:func:`pm_peer_data_store` function.
+   * Fixed an issue where the :c:func:`pm_peer_delete` function under some circumstances could fail to delete peer data.
 
 * :ref:`lib_bm_buttons` library:
 
@@ -403,6 +404,10 @@ Peripheral samples
 * :ref:`bm_lpuarte_sample` sample:
 
   * Updated to align with changes to the :ref:`driver_lpuarte` driver.
+
+* :ref:`uarte_sample` sample:
+
+   * Updated the sample to use the logging module instead of console.
 
 DFU samples
 -----------
