@@ -19,13 +19,13 @@ SDK installation
 S115 SoftDevice
 ===============
 
-* Updated the SoftDevice to v10.0.0-1.prototype.
+* Updated the SoftDevice to v10.0.0.
   See the SoftDevice release notes for details.
 
 S145 SoftDevice
 ===============
 
-* Updated the SoftDevice to v10.0.0-1.prototype.
+* Updated the SoftDevice to v10.0.0.
   See the SoftDevice release notes for details.
 
 SoftDevice Handler
@@ -49,7 +49,7 @@ Boards
 
    * PCA10188 (`nRF54LV10 DK`_)
    * PCA10184 (`nRF54LM20 DK`_)
-   * PCA10214 (nRF54LS05 DK)
+   * PCA10214 (`nRF54LS05 DK`_)
 
 * Updated:
 
@@ -82,6 +82,8 @@ DFU
      New solution is enabled by the :kconfig:option:`CONFIG_BM_FLAT_SETTINGS_BLUETOOTH_NAME` Kconfig option.
      It empploys newly added Inter application RAM Clipboard storage.
    * Support for nRF54L15, nRF54L10, and nRF54L05 SoCs is no longer experimental and is now fully supported and ready to be used.
+   * Firmware loader to not clear the retained DFU Device Bluetooth name after loading it from retained memory.
+     This allows the advertising name to persist after updating SoftDevice and/or firmware loader, or if the application image validation fails and the device reboots into firmware loader.
 
 Removed:
 
@@ -355,7 +357,7 @@ Samples
 
 * Aligned LED and button behavior across samples.
 
-* All samples that are compatible with the new board targets PCA10188 (`nRF54LV10 DK`_), PCA10184 (`nRF54LM20 DK`_), and PCA10214 (nRF54LS05 DK) have been updated to reflect support for these boards.
+* All samples that are compatible with the new board targets PCA10188 (`nRF54LV10 DK`_), PCA10184 (`nRF54LM20 DK`_), and PCA10214 (`nRF54LS05 DK`_) have been updated to reflect support for these boards.
 
 Bluetooth LE samples
 --------------------
@@ -418,6 +420,8 @@ DFU samples
      To enable the size-optimized configuration, set :makevar:`FILE_SUFFIX` to ``size_opt`` when building the sample.
    * The :ref:`ble_mcuboot_recovery_entry_sample` migrates to new soultion for Setting up DFU Device Bluetooth name remotely.
      See the :ref:`ug_dfu` page for details.
+   * The :ref:`ble_mcuboot_recovery_entry_sample` to clear the retained DFU Device Bluetooth name on boot.
+     This was previously done by the firmware loader.
 
 Subsystem samples
 -----------------
@@ -435,3 +439,4 @@ Documentation
 * Added the :ref:`drivers_alloc_int` page.
 * Improved sample documentation with clearer, more descriptive user guides, including updated explanations of configuration options, hardware connections, and testing procedures.
 * Added the :ref:`board_memory_layouts` section, which documents RRAM and SRAM partition layouts for supported boards.
+* Updated the :ref:`softdevice_docs` and :ref:`nrf_bm_api` pages to provide separate documentation and API references for each SoC-specific variant of the S115 and S145 SoftDevices (nRF54L15, nRF54LM20, nRF54LS05, and nRF54LV10).

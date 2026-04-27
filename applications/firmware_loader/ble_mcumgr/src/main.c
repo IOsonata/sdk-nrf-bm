@@ -226,8 +226,7 @@ int main(void)
 
 	err = bm_rmem_init(&clipboard_ctx);
 	if (err) {
-		LOG_INF("Failed to initialize retained clipboard reader, err %d", err);
-		/* Error is expected if retained RAM is empty or data are corrupted. */
+		LOG_ERR("Failed to initialize retained clipboard reader, err %d", err);
 	}
 #endif
 
@@ -277,11 +276,6 @@ int main(void)
 		memcpy(log_name_buffer, custom_advertising_name, custom_advertising_name_size);
 		log_name_buffer[custom_advertising_name_size] = '\0';
 #endif
-		err = bm_rmem_clear(&clipboard_ctx);
-		if (err) {
-			LOG_ERR("Failed to clear retained clipboard, err %d", err);
-			return 0;
-		}
 	}
 #endif /* CONFIG_BM_FLAT_SETTINGS_BLUETOOTH_NAME */
 
