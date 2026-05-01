@@ -10,6 +10,10 @@ tests:
       - bm_nrf54l15dk/nrf54l10/cpuapp/s145_softdevice/mcuboot
       - bm_nrf54l15dk/nrf54l15/cpuapp/s115_softdevice/mcuboot
       - bm_nrf54l15dk/nrf54l15/cpuapp/s145_softdevice/mcuboot
+      - bm_nrf54lv10dk/nrf54lv10a/cpuapp/s115_softdevice/mcuboot
+      - bm_nrf54lv10dk/nrf54lv10a/cpuapp/s145_softdevice/mcuboot
+      - bm_nrf54lm20dk/nrf54lm20a/cpuapp/s115_softdevice/mcuboot
+      - bm_nrf54lm20dk/nrf54lm20a/cpuapp/s145_softdevice/mcuboot
     tags:
       - kmu
     harness: console
@@ -30,6 +34,10 @@ tests:
       - bm_nrf54l15dk/nrf54l10/cpuapp/s145_softdevice/mcuboot
       - bm_nrf54l15dk/nrf54l15/cpuapp/s115_softdevice/mcuboot
       - bm_nrf54l15dk/nrf54l15/cpuapp/s145_softdevice/mcuboot
+      - bm_nrf54lv10dk/nrf54lv10a/cpuapp/s115_softdevice/mcuboot
+      - bm_nrf54lv10dk/nrf54lv10a/cpuapp/s145_softdevice/mcuboot
+      - bm_nrf54lm20dk/nrf54lm20a/cpuapp/s115_softdevice/mcuboot
+      - bm_nrf54lm20dk/nrf54lm20a/cpuapp/s145_softdevice/mcuboot
     tags:
       - pytest
       - kmu
@@ -51,6 +59,10 @@ tests:
       - bm_nrf54l15dk/nrf54l10/cpuapp/s145_softdevice/mcuboot
       - bm_nrf54l15dk/nrf54l15/cpuapp/s115_softdevice/mcuboot
       - bm_nrf54l15dk/nrf54l15/cpuapp/s145_softdevice/mcuboot
+      - bm_nrf54lv10dk/nrf54lv10a/cpuapp/s115_softdevice/mcuboot
+      - bm_nrf54lv10dk/nrf54lv10a/cpuapp/s145_softdevice/mcuboot
+      - bm_nrf54lm20dk/nrf54lm20a/cpuapp/s115_softdevice/mcuboot
+      - bm_nrf54lm20dk/nrf54lm20a/cpuapp/s145_softdevice/mcuboot
     tags:
       - pytest
       - kmu
@@ -77,6 +89,10 @@ tests:
       - bm_nrf54l15dk/nrf54l10/cpuapp/s145_softdevice/mcuboot
       - bm_nrf54l15dk/nrf54l15/cpuapp/s115_softdevice/mcuboot
       - bm_nrf54l15dk/nrf54l15/cpuapp/s145_softdevice/mcuboot
+      - bm_nrf54lv10dk/nrf54lv10a/cpuapp/s115_softdevice/mcuboot
+      - bm_nrf54lv10dk/nrf54lv10a/cpuapp/s145_softdevice/mcuboot
+      - bm_nrf54lm20dk/nrf54lm20a/cpuapp/s115_softdevice/mcuboot
+      - bm_nrf54lm20dk/nrf54lm20a/cpuapp/s145_softdevice/mcuboot
     tags:
       - pytest
       - kmu
